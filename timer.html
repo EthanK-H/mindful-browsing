@@ -10,42 +10,40 @@
   <div class="container">
     <div id="friction-phase" class="hidden">
       <div class="phase-label">Step 1 of 3</div>
-      <div class="prompt">Before continuing, type the following:</div>
+      <p class="prompt">Before continuing, type the following:</p>
       <div class="friction-target" id="friction-target"></div>
       <div class="friction-container">
-        <input type="text" class="friction-input" id="friction-input" placeholder="Type here..." autocomplete="off">
+        <input type="text" class="friction-input" id="friction-input" placeholder="Type the phrase above" autocomplete="off">
       </div>
     </div>
 
     <div id="wait-phase" class="hidden">
       <div class="phase-label">Step 2 of 3</div>
-      <div class="prompt">Come back in <span id="wait-time"></span> if you still want this.</div>
+      <p class="prompt">Return in <span id="wait-time"></span> if you still want this.</p>
       <div class="timer" id="wait-timer">30:00</div>
-      <p class="warning">You can close this tab. The timer continues.</p>
+      <p class="warning">You can close this tab. The timer keeps running.</p>
     </div>
 
     <div id="meditation-phase" class="hidden">
       <div class="phase-label" id="meditation-label">Breathe</div>
       <div class="timer" id="meditation-timer">10:00</div>
-      <div class="prompt" id="meditation-prompt"></div>
+      <p class="prompt" id="meditation-prompt"></p>
       <div class="site-name" id="site-name"></div>
     </div>
 
     <div id="reflection-phase" class="hidden">
-      <div class="phase-label">One last moment</div>
-      <div class="prompt" id="reflection-prompt"></div>
+      <div class="phase-label">Before you go</div>
+      <p class="prompt" id="reflection-prompt"></p>
       <textarea class="reflection-area" id="reflection-input" placeholder="Be honest with yourself..."></textarea>
-      <div>
-        <button class="btn btn-proceed" id="reflection-continue">Continue to site</button>
-      </div>
+      <button class="btn btn-proceed" id="reflection-continue">Continue to site</button>
     </div>
 
     <div id="proceed-container" class="hidden">
-      <button class="btn btn-proceed" id="proceed-btn">Continue to video</button>
+      <button class="btn btn-proceed" id="proceed-btn">Continue</button>
     </div>
 
     <div id="nuclear-container" class="hidden">
-      <button class="btn btn-nuclear" id="nuclear-btn">Skip this once (1 remaining today)</button>
+      <button class="btn btn-nuclear" id="nuclear-btn">Skip this once (1 left today)</button>
     </div>
   </div>
 
