@@ -4,7 +4,7 @@ const DEFAULT_SETTINGS = {
     'twitter.com': { tier: 'friction', timerMinutes: 10, waitMinutes: 30 },
     'x.com': { tier: 'friction', timerMinutes: 10, waitMinutes: 30 },
     'snapchat.com': { tier: 'friction', timerMinutes: 10, waitMinutes: 30 },
-    'linkedin.com': { tier: 'friction', timerMinutes: 10, waitMinutes: 30 },
+    'linkedin.com': { tier: 'mindful', timerMinutes: 10 },
     'facebook.com': { tier: 'friction', timerMinutes: 10, waitMinutes: 30 }
   },
   nuclearSkipsToday: 0,
