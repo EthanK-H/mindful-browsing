@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "Mindful Browsing",
+  "version": "1.0",
+  "description": "Add intentionality to distracting sites with meditation timers and friction",
+  "permissions": ["storage", "webNavigation"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "web_accessible_resources": [{
+    "resources": ["timer.html", "timer.js", "styles.css"],
+    "matches": ["<all_urls>"]
+  }]
+}

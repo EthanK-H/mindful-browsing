@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pause</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <div id="friction-phase" class="hidden">
+      <div class="phase-label">Step 1 of 3</div>
+      <div class="prompt">Before continuing, type the following:</div>
+      <div class="friction-target" id="friction-target"></div>
+      <div class="friction-container">
+        <input type="text" class="friction-input" id="friction-input" placeholder="Type here..." autocomplete="off">
+      </div>
+    </div>
+
+    <div id="wait-phase" class="hidden">
+      <div class="phase-label">Step 2 of 3</div>
+      <div class="prompt">Come back in <span id="wait-time"></span> if you still want this.</div>
+      <div class="timer" id="wait-timer">30:00</div>
+      <p class="warning">You can close this tab. The timer continues.</p>
+    </div>
+
+    <div id="meditation-phase" class="hidden">
+      <div class="phase-label" id="meditation-label">Breathe</div>
+      <div class="timer" id="meditation-timer">10:00</div>
+      <div class="prompt" id="meditation-prompt"></div>
+      <div class="site-name" id="site-name"></div>
+    </div>
+
+    <div id="reflection-phase" class="hidden">
+      <div class="phase-label">One last moment</div>
+      <div class="prompt" id="reflection-prompt"></div>
+      <textarea class="reflection-area" id="reflection-input" placeholder="Be honest with yourself..."></textarea>
+      <div>
+        <button class="btn btn-proceed" id="reflection-continue">Continue to site</button>
+      </div>
+    </div>
+
+    <div id="proceed-container" class="hidden">
+      <button class="btn btn-proceed" id="proceed-btn">Continue to video</button>
+    </div>
+
+    <div id="nuclear-container" class="hidden">
+      <button class="btn btn-nuclear" id="nuclear-btn">Skip this once (1 remaining today)</button>
+    </div>
+  </div>
+
+  <script src="timer.js"></script>
+</body>
+</html>
