@@ -4,7 +4,7 @@
   "version": "1.0",
   "description": "Add intentionality to distracting sites with meditation timers and friction",
   "permissions": ["storage", "webNavigation"],
-  "incognito": "spanning",
+  "incognito": "split",
   "background": {
     "service_worker": "background.js"
   },
