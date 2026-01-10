@@ -152,7 +152,7 @@ function rotatePrompt() {
 }
 
 function updateNuclearButton() {
-  chrome.runtime.sendMessage({ type: 'getNuclearSkips' }, (response) => {
+  chrome.runtime.sendMessage({ type: 'getNuclearSkips', site: siteName }, (response) => {
     const btn = document.getElementById('nuclear-btn');
     if (response.remaining > 0) {
       btn.textContent = `Skip this once (${response.remaining} remaining today)`;
@@ -181,7 +181,7 @@ document.getElementById('proceed-btn').addEventListener('click', unlockAndProcee
 document.getElementById('reflection-continue').addEventListener('click', unlockAndProceed);
 
 document.getElementById('nuclear-btn').addEventListener('click', () => {
-  chrome.runtime.sendMessage({ type: 'useNuclearSkip' }, (response) => {
+  chrome.runtime.sendMessage({ type: 'useNuclearSkip', site: siteName }, (response) => {
     if (response.success) {
       unlockAndProceed();
     } else {

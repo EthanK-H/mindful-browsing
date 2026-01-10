@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Stats Mockup</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #e8e6e1;
+      padding: 40px;
+      display: flex;
+      gap: 40px;
+      flex-wrap: wrap;
+    }
+
+    .mockup-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .mockup-label {
+      font-size: 14px;
+      color: #666;
+      font-weight: 500;
+    }
+
+    .popup {
+      width: 340px;
+      background: #f8f7f4;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .header h1 {
+      font-size: 18px;
+      color: #3d3a37;
+      font-weight: 600;
+    }
+
+    .header p {
+      font-size: 12px;
+      color: #7a756e;
+      margin-top: 4px;
+    }
+
+    /* Stats Section */
+    .stats-section {
+      background: #f0eeea;
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .stats-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .stats-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #3d3a37;
+    }
+
+    .stats-period {
+      font-size: 11px;
+      color: #7a756e;
+      background: #e8e6e1;
+      padding: 3px 8px;
+      border-radius: 10px;
+    }
+
+    .stat-row {
+      display: flex;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid #e8e6e1;
+    }
+
+    .stat-row:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .stat-site {
+      flex: 1;
+      font-size: 13px;
+      color: #3d3a37;
+    }
+
+    .stat-numbers {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .stat-attempts {
+      font-size: 12px;
+      color: #7a756e;
+    }
+
+    .stat-arrow {
+      color: #a8a49c;
+      font-size: 10px;
+    }
+
+    .stat-visited {
+      font-size: 12px;
+      font-weight: 600;
+      color: #5c8a5e;
+    }
+
+    .stat-bar-container {
+      width: 50px;
+      height: 4px;
+      background: #e0ddd8;
+      border-radius: 2px;
+      margin-left: 10px;
+      overflow: hidden;
+    }
+
+    .stat-bar {
+      height: 100%;
+      background: #5c8a5e;
+      border-radius: 2px;
+    }
+
+    /* Alternative: Card Style */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .stat-card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .stat-card-number {
+      font-size: 24px;
+      font-weight: 600;
+      color: #3d3a37;
+    }
+
+    .stat-card-label {
+      font-size: 11px;
+      color: #7a756e;
+      margin-top: 2px;
+    }
+
+    .stat-card.highlight {
+      background: #5c8a5e;
+    }
+
+    .stat-card.highlight .stat-card-number,
+    .stat-card.highlight .stat-card-label {
+      color: #fff;
+    }
+
+    /* Site list in card style */
+    .site-stats-list {
+      margin-top: 12px;
+    }
+
+    .site-stat-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid #e8e6e1;
+      font-size: 12px;
+    }
+
+    .site-stat-item:last-child {
+      border-bottom: none;
+    }
+
+    .site-stat-name {
+      color: #3d3a37;
+    }
+
+    .site-stat-ratio {
+      color: #7a756e;
+    }
+
+    .site-stat-ratio strong {
+      color: #5c8a5e;
+    }
+
+    /* Divider */
+    .divider {
+      height: 1px;
+      background: #e8e6e1;
+      margin: 16px 0;
+    }
+
+    .sites-section-title {
+      font-size: 12px;
+      color: #7a756e;
+      margin-bottom: 10px;
+    }
+
+    /* Placeholder for site list */
+    .site-placeholder {
+      background: #f0eeea;
+      border-radius: 8px;
+      padding: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .site-placeholder-name {
+      font-size: 13px;
+      color: #3d3a37;
+    }
+
+    .site-placeholder-tier {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 10px;
+      background: #e8e6e1;
+      color: #7a756e;
+    }
+
+    .tier-friction {
+      background: #f0e6dc;
+      color: #8b6b4f;
+    }
+
+    .tier-mindful {
+      background: #e6f0e6;
+      color: #5c8a5e;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Option A: Row-based stats -->
+  <div class="mockup-container">
+    <div class="mockup-label">Option A: Row-based Stats</div>
+    <div class="popup">
+      <div class="header">
+        <h1>Mindful Browsing</h1>
+        <p>Pause before you scroll</p>
+      </div>
+
+      <div class="stats-section">
+        <div class="stats-header">
+          <span class="stats-title">Your Progress</span>
+          <span class="stats-period">This Week</span>
+        </div>
+
+        <div class="stat-row">
+          <span class="stat-site">youtube.com</span>
+          <div class="stat-numbers">
+            <span class="stat-attempts">12 attempts</span>
+            <span class="stat-arrow">→</span>
+            <span class="stat-visited">3 visited</span>
+            <div class="stat-bar-container">
+              <div class="stat-bar" style="width: 25%"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="stat-row">
+          <span class="stat-site">twitter.com</span>
+          <div class="stat-numbers">
+            <span class="stat-attempts">8 attempts</span>
+            <span class="stat-arrow">→</span>
+            <span class="stat-visited">1 visited</span>
+            <div class="stat-bar-container">
+              <div class="stat-bar" style="width: 12%"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="stat-row">
+          <span class="stat-site">linkedin.com</span>
+          <div class="stat-numbers">
+            <span class="stat-attempts">5 attempts</span>
+            <span class="stat-arrow">→</span>
+            <span class="stat-visited">4 visited</span>
+            <div class="stat-bar-container">
+              <div class="stat-bar" style="width: 80%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sites-section-title">Blocked Sites</div>
+      <div class="site-placeholder">
+        <span class="site-placeholder-name">youtube.com</span>
+        <span class="site-placeholder-tier tier-mindful">mindful</span>
+      </div>
+      <div class="site-placeholder">
+        <span class="site-placeholder-name">twitter.com</span>
+        <span class="site-placeholder-tier tier-friction">friction</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Option B: Card-based summary -->
+  <div class="mockup-container">
+    <div class="mockup-label">Option B: Card Summary + List</div>
+    <div class="popup">
+      <div class="header">
+        <h1>Mindful Browsing</h1>
+        <p>Pause before you scroll</p>
+      </div>
+
+      <div class="stats-section">
+        <div class="stats-header">
+          <span class="stats-title">This Week</span>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-card-number">25</div>
+            <div class="stat-card-label">Attempts</div>
+          </div>
+          <div class="stat-card highlight">
+            <div class="stat-card-number">17</div>
+            <div class="stat-card-label">Resisted</div>
+          </div>
+        </div>
+
+        <div class="site-stats-list">
+          <div class="site-stat-item">
+            <span class="site-stat-name">youtube.com</span>
+            <span class="site-stat-ratio">12 → <strong>3 visited</strong></span>
+          </div>
+          <div class="site-stat-item">
+            <span class="site-stat-name">twitter.com</span>
+            <span class="site-stat-ratio">8 → <strong>1 visited</strong></span>
+          </div>
+          <div class="site-stat-item">
+            <span class="site-stat-name">linkedin.com</span>
+            <span class="site-stat-ratio">5 → <strong>4 visited</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="sites-section-title">Blocked Sites</div>
+      <div class="site-placeholder">
+        <span class="site-placeholder-name">youtube.com</span>
+        <span class="site-placeholder-tier tier-mindful">mindful</span>
+      </div>
+      <div class="site-placeholder">
+        <span class="site-placeholder-name">twitter.com</span>
+        <span class="site-placeholder-tier tier-friction">friction</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Option C: Minimal inline -->
+  <div class="mockup-container">
+    <div class="mockup-label">Option C: Minimal Inline Stats</div>
+    <div class="popup">
+      <div class="header">
+        <h1>Mindful Browsing</h1>
+        <p>Pause before you scroll</p>
+      </div>
+
+      <div class="sites-section-title">Blocked Sites</div>
+
+      <div class="site-placeholder" style="flex-direction: column; align-items: stretch; gap: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span class="site-placeholder-name">youtube.com</span>
+          <span class="site-placeholder-tier tier-mindful">mindful</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 11px; color: #7a756e;">
+          <span>12 attempts this week</span>
+          <span style="color: #5c8a5e; font-weight: 500;">75% resisted</span>
+        </div>
+      </div>
+
+      <div class="site-placeholder" style="flex-direction: column; align-items: stretch; gap: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span class="site-placeholder-name">twitter.com</span>
+          <span class="site-placeholder-tier tier-friction">friction</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 11px; color: #7a756e;">
+          <span>8 attempts this week</span>
+          <span style="color: #5c8a5e; font-weight: 500;">88% resisted</span>
+        </div>
+      </div>
+
+      <div class="site-placeholder" style="flex-direction: column; align-items: stretch; gap: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span class="site-placeholder-name">linkedin.com</span>
+          <span class="site-placeholder-tier tier-mindful">mindful</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 11px; color: #7a756e;">
+          <span>5 attempts this week</span>
+          <span style="color: #5c8a5e; font-weight: 500;">20% resisted</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

@@ -7,8 +7,7 @@ const DEFAULT_SETTINGS = {
     'linkedin.com': { tier: 'mindful', timerMinutes: 10 },
     'facebook.com': { tier: 'friction', timerMinutes: 10, waitMinutes: 30 }
   },
-  nuclearSkipsToday: 0,
-  nuclearSkipDate: null,
+  siteSkips: {},  // { siteName: { count: 0, date: null } }
   unlockedUrls: {}
 };
 
@@ -59,19 +58,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
   
   if (message.type === 'useNuclearSkip') {
-    chrome.storage.local.get(['nuclearSkipsToday', 'nuclearSkipDate'], (data) => {
+    const site = message.site;
+    chrome.storage.local.get(['siteSkips'], (data) => {
       const today = new Date().toDateString();
-      let skipsToday = data.nuclearSkipsToday || 0;
-      
-      if (data.nuclearSkipDate !== today) {
-        skipsToday = 0;
+      const siteSkips = data.siteSkips || {};
+      const siteData = siteSkips[site] || { count: 0, date: null };
+
+      if (siteData.date !== today) {
+        siteData.count = 0;
       }
-      
-      if (skipsToday < 1) {
-        chrome.storage.local.set({ 
-          nuclearSkipsToday: skipsToday + 1, 
-          nuclearSkipDate: today 
-        });
+
+      if (siteData.count < 1) {
+        siteData.count = 1;
+        siteData.date = today;
+        siteSkips[site] = siteData;
+        chrome.storage.local.set({ siteSkips });
         sendResponse({ success: true, remaining: 0 });
       } else {
         sendResponse({ success: false, remaining: 0 });
@@ -79,14 +80,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     });
     return true;
   }
-  
+
   if (message.type === 'getNuclearSkips') {
-    chrome.storage.local.get(['nuclearSkipsToday', 'nuclearSkipDate'], (data) => {
+    const site = message.site;
+    chrome.storage.local.get(['siteSkips'], (data) => {
       const today = new Date().toDateString();
-      if (data.nuclearSkipDate !== today) {
+      const siteSkips = data.siteSkips || {};
+      const siteData = siteSkips[site] || { count: 0, date: null };
+
+      if (siteData.date !== today) {
         sendResponse({ remaining: 1 });
       } else {
-        sendResponse({ remaining: Math.max(0, 1 - (data.nuclearSkipsToday || 0)) });
+        sendResponse({ remaining: Math.max(0, 1 - siteData.count) });
       }
     });
     return true;
