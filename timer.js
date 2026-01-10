@@ -8,7 +8,7 @@ const waitMinutes = parseInt(params.get('waitMinutes')) || 30;
 const FRICTION_PHRASES = [
   "I am choosing distraction over presence",
   "I am aware this is an impulse",
-  "This moment will pass without Twitter",
+  "This moment will pass without scrolling",
   "I choose how I spend my attention"
 ];
 
@@ -31,7 +31,7 @@ const MINDFUL_PROMPTS = [
 ];
 
 const FRICTION_PROMPTS = [
-  "Why do you want to check Twitter right now?",
+  "Why do you want to check this site right now?",
   "What are you avoiding?",
   "Is this how you want to spend your attention?",
   "What feeling are you chasing?",
