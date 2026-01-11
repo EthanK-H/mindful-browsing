@@ -25,7 +25,7 @@ chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
   const sites = data.sites || DEFAULT_SETTINGS.sites;
   const unlockedUrls = data.unlockedUrls || {};
   
-  const matchedSite = Object.keys(sites).find(site => hostname.includes(site));
+  const matchedSite = Object.keys(sites).find(site => hostname === site || hostname.endsWith('.' + site));
   if (!matchedSite) return;
   
   const fullUrl = details.url;
