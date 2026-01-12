@@ -8,7 +8,7 @@ const DEFAULT_SETTINGS = {
     'facebook.com': { tier: 'friction', timerMinutes: 10, waitMinutes: 30 }
   },
   siteSkips: {},  // { siteName: { count: 0, date: null } }
-  unlockedUrls: {}
+  unlockedSites: {}  // { siteName: timestamp }
 };
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -21,17 +21,18 @@ chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
   const url = new URL(details.url);
   const hostname = url.hostname.replace('www.', '');
   
-  const data = await chrome.storage.local.get(['sites', 'unlockedUrls']);
+  const data = await chrome.storage.local.get(['sites', 'unlockedSites']);
   const sites = data.sites || DEFAULT_SETTINGS.sites;
-  const unlockedUrls = data.unlockedUrls || {};
-  
+  const unlockedSites = data.unlockedSites || {};
+
   const matchedSite = Object.keys(sites).find(site => hostname.includes(site));
   if (!matchedSite) return;
-  
+
   const fullUrl = details.url;
   const now = Date.now();
-  
-  if (unlockedUrls[fullUrl] && (now - unlockedUrls[fullUrl]) < 3600000) {
+
+  // Check if site is unlocked (10 minutes = 600000ms)
+  if (unlockedSites[matchedSite] && (now - unlockedSites[matchedSite]) < 600000) {
     return;
   }
   
@@ -47,11 +48,11 @@ chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.type === 'unlockUrl') {
-    chrome.storage.local.get(['unlockedUrls'], (data) => {
-      const unlockedUrls = data.unlockedUrls || {};
-      unlockedUrls[message.url] = Date.now();
-      chrome.storage.local.set({ unlockedUrls });
+  if (message.type === 'unlockSite') {
+    chrome.storage.local.get(['unlockedSites'], (data) => {
+      const unlockedSites = data.unlockedSites || {};
+      unlockedSites[message.site] = Date.now();
+      chrome.storage.local.set({ unlockedSites });
       sendResponse({ success: true });
     });
     return true;

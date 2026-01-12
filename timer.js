@@ -165,7 +165,7 @@ function updateNuclearButton() {
 }
 
 function unlockAndProceed() {
-  chrome.runtime.sendMessage({ type: 'unlockUrl', url: targetUrl }, () => {
+  chrome.runtime.sendMessage({ type: 'unlockSite', site: siteName }, () => {
     window.location.href = targetUrl;
   });
 }
