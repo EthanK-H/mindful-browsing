@@ -59,8 +59,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         timestamp: Date.now(),
         duration: message.duration || 600000  // default 10 mins
       };
-      chrome.storage.local.set({ unlockedSites });
-      sendResponse({ success: true });
+      chrome.storage.local.set({ unlockedSites }, () => {
+        sendResponse({ success: true });
+      });
     });
     return true;
   }
