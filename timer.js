@@ -183,7 +183,10 @@ document.getElementById('reflection-continue').addEventListener('click', unlockA
 document.getElementById('nuclear-btn').addEventListener('click', () => {
   chrome.runtime.sendMessage({ type: 'useNuclearSkip', site: siteName }, (response) => {
     if (response.success) {
-      unlockAndProceed();
+      // Nuclear skip unlocks for 15 minutes (900000ms)
+      chrome.runtime.sendMessage({ type: 'unlockSite', site: siteName, duration: 900000 }, () => {
+        window.location.href = targetUrl;
+      });
     } else {
       updateNuclearButton();
     }

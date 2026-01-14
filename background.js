@@ -31,9 +31,13 @@ chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
   const fullUrl = details.url;
   const now = Date.now();
 
-  // Check if site is unlocked (10 minutes = 600000ms)
-  if (unlockedSites[matchedSite] && (now - unlockedSites[matchedSite]) < 600000) {
-    return;
+  // Check if site is unlocked
+  if (unlockedSites[matchedSite]) {
+    const unlock = unlockedSites[matchedSite];
+    const duration = unlock.duration || 600000; // default 10 mins
+    if ((now - unlock.timestamp) < duration) {
+      return;
+    }
   }
   
   const siteConfig = sites[matchedSite];
@@ -51,7 +55,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'unlockSite') {
     chrome.storage.local.get(['unlockedSites'], (data) => {
       const unlockedSites = data.unlockedSites || {};
-      unlockedSites[message.site] = Date.now();
+      unlockedSites[message.site] = {
+        timestamp: Date.now(),
+        duration: message.duration || 600000  // default 10 mins
+      };
       chrome.storage.local.set({ unlockedSites });
       sendResponse({ success: true });
     });
