@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monster Battle Simulator</title>
+<style>
+  :root {
+    --screen-bg: #f8f8e8;
+    --ui-border: #383030;
+    --hp-green: #58d058;
+    --hp-yellow: #f8c038;
+    --hp-red: #f05858;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Courier New', monospace;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    color: #222;
+  }
+
+  .game-shell {
+    width: 100%;
+    max-width: 720px;
+  }
+
+  h1.title {
+    text-align: center;
+    color: #f8d030;
+    text-shadow: 3px 3px 0 #383030;
+    font-size: 28px;
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+  }
+
+  .screen {
+    background: var(--screen-bg);
+    border: 6px solid var(--ui-border);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+  }
+
+  /* ============ SELECT SCREEN ============ */
+  #select-screen { padding: 20px; }
+
+  #select-screen h2 {
+    text-align: center;
+    margin-bottom: 4px;
+    font-size: 20px;
+  }
+
+  #select-screen .hint {
+    text-align: center;
+    color: #666;
+    font-size: 13px;
+    margin-bottom: 16px;
+  }
+
+  .roster {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .roster-card {
+    background: #fff;
+    border: 3px solid #b0a890;
+    border-radius: 10px;
+    padding: 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.1s, border-color 0.1s, box-shadow 0.1s;
+    user-select: none;
+  }
+
+  .roster-card:hover { transform: translateY(-3px); box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+
+  .roster-card.selected {
+    border-color: #e03028;
+    background: #fff4f0;
+    box-shadow: 0 0 0 2px #e03028;
+  }
+
+  .roster-card .sprite { font-size: 42px; line-height: 1.2; }
+  .roster-card .name { font-weight: bold; font-size: 15px; margin-top: 4px; }
+  .roster-card .stats { font-size: 11px; color: #555; margin-top: 4px; line-height: 1.5; }
+
+  .type-badge {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 8px;
+    font-size: 10px;
+    font-weight: bold;
+    color: #fff;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  .start-row { text-align: center; }
+
+  /* ============ BATTLE SCREEN ============ */
+  #battle-screen { display: none; }
+
+  .arena {
+    position: relative;
+    height: 320px;
+    background: linear-gradient(to bottom, #a8e0f8 0%, #c8ecf8 55%, #88c860 55%, #a8d878 100%);
+    overflow: hidden;
+  }
+
+  .platform {
+    position: absolute;
+    width: 200px;
+    height: 44px;
+    background: radial-gradient(ellipse at center, #d8c878 0%, #c0a858 70%, transparent 71%);
+    border-radius: 50%;
+  }
+  .platform.enemy { top: 120px; right: 36px; }
+  .platform.player { bottom: -8px; left: 36px; }
+
+  .combatant {
+    position: absolute;
+    font-size: 76px;
+    line-height: 1;
+    filter: drop-shadow(2px 4px 3px rgba(0,0,0,0.3));
+    transition: opacity 0.4s, transform 0.4s;
+  }
+  #enemy-sprite { top: 58px; right: 96px; }
+  #player-sprite { bottom: 26px; left: 96px; transform: scaleX(-1); }
+
+  .combatant.fainted { opacity: 0; transform: translateY(60px); }
+  #player-sprite.fainted { transform: scaleX(-1) translateY(60px); }
+
+  @keyframes shake {
+    0%, 100% { margin-left: 0; }
+    20% { margin-left: -12px; }
+    40% { margin-left: 12px; }
+    60% { margin-left: -8px; }
+    80% { margin-left: 8px; }
+  }
+  .combatant.hit { animation: shake 0.45s ease; }
+
+  @keyframes lunge-right {
+    0%, 100% { margin-top: 0; margin-left: 0; }
+    40% { margin-left: 28px; margin-top: -14px; }
+  }
+  @keyframes lunge-left {
+    0%, 100% { margin-top: 0; margin-right: 0; }
+    40% { margin-right: 28px; margin-top: 14px; }
+  }
+  #player-sprite.attacking { animation: lunge-right 0.4s ease; }
+  #enemy-sprite.attacking { animation: lunge-left 0.4s ease; }
+
+  .info-box {
+    position: absolute;
+    width: 250px;
+    background: var(--screen-bg);
+    border: 3px solid var(--ui-border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.25);
+  }
+  #enemy-info { top: 18px; left: 18px; }
+  #player-info { bottom: 18px; right: 18px; }
+
+  .info-box .row1 {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-weight: bold;
+    font-size: 14px;
+  }
+
+  .hp-track {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+  }
+  .hp-label {
+    font-size: 10px;
+    font-weight: bold;
+    color: #f8a830;
+    background: #484038;
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+  .hp-outer {
+    flex: 1;
+    height: 10px;
+    background: #585048;
+    border-radius: 5px;
+    padding: 2px;
+  }
+  .hp-inner {
+    height: 100%;
+    width: 100%;
+    background: var(--hp-green);
+    border-radius: 3px;
+    transition: width 0.7s ease, background-color 0.7s;
+  }
+  .hp-text {
+    text-align: right;
+    font-size: 12px;
+    font-weight: bold;
+    margin-top: 4px;
+  }
+
+  .team-dots { display: flex; gap: 4px; margin-top: 6px; }
+  .team-dots .dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    border: 2px solid #585048;
+    background: #e03028;
+  }
+  .team-dots .dot.empty { background: transparent; }
+
+  /* ============ MESSAGE / MENU PANEL ============ */
+  .panel {
+    border-top: 6px solid var(--ui-border);
+    background: #fff;
+    min-height: 130px;
+    display: flex;
+  }
+
+  #message-box {
+    flex: 1;
+    padding: 16px 20px;
+    font-size: 17px;
+    line-height: 1.6;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    cursor: pointer;
+  }
+  #message-box .continue {
+    align-self: flex-end;
+    animation: bob 0.8s infinite alternate;
+    font-size: 14px;
+    color: #888;
+  }
+  @keyframes bob { from { transform: translateY(0); } to { transform: translateY(4px); } }
+
+  #menu-box {
+    flex: 1;
+    display: none;
+    flex-direction: column;
+    padding: 12px 16px;
+  }
+  #menu-prompt { font-size: 15px; font-weight: bold; margin-bottom: 8px; }
+
+  .menu-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    flex: 1;
+  }
+
+  .menu-btn {
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: bold;
+    border: 3px solid var(--ui-border);
+    border-radius: 8px;
+    background: #fff;
+    cursor: pointer;
+    padding: 8px 10px;
+    text-align: left;
+    transition: background 0.1s, transform 0.05s;
+  }
+  .menu-btn:hover:not(:disabled) { background: #f8f0d8; transform: translateY(-1px); }
+  .menu-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .menu-btn .sub { display: block; font-size: 11px; font-weight: normal; color: #666; margin-top: 2px; }
+  .menu-btn.back-btn { background: #f0e8e8; text-align: center; }
+
+  /* ============ RESULT OVERLAY ============ */
+  #result-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 10, 30, 0.85);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+  }
+  .result-card {
+    background: var(--screen-bg);
+    border: 6px solid var(--ui-border);
+    border-radius: 14px;
+    padding: 36px 48px;
+    text-align: center;
+    animation: pop-in 0.35s ease;
+  }
+  @keyframes pop-in {
+    from { transform: scale(0.7); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  .result-card h2 { font-size: 30px; margin-bottom: 8px; }
+  .result-card p { color: #555; margin-bottom: 20px; }
+
+  .big-btn {
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: bold;
+    padding: 12px 32px;
+    border: 4px solid var(--ui-border);
+    border-radius: 10px;
+    background: #f8d030;
+    cursor: pointer;
+    box-shadow: 0 4px 0 #b89820;
+    transition: transform 0.05s, box-shadow 0.05s;
+  }
+  .big-btn:hover { transform: translateY(2px); box-shadow: 0 2px 0 #b89820; }
+  .big-btn:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+
+  @media (max-width: 560px) {
+    .arena { height: 280px; }
+    .combatant { font-size: 56px; }
+    #enemy-sprite { right: 60px; }
+    #player-sprite { left: 60px; }
+    .info-box { width: 195px; padding: 6px 8px; }
+    .platform { width: 140px; }
+    .platform.enemy { right: 20px; }
+    .platform.player { left: 20px; }
+  }
+</style>
+</head>
+<body>
+<div class="game-shell">
+  <h1 class="title">⚔ MONSTER BATTLE ⚔</h1>
+
+  <!-- Team select -->
+  <div class="screen" id="select-screen">
+    <h2>Choose Your Team</h2>
+    <p class="hint">Pick 3 monsters. Your rival will assemble a team of their own!</p>
+    <div class="roster" id="roster"></div>
+    <div class="start-row">
+      <button class="big-btn" id="start-btn" disabled>PICK 3 MONSTERS</button>
+    </div>
+  </div>
+
+  <!-- Battle -->
+  <div class="screen" id="battle-screen">
+    <div class="arena">
+      <div class="platform enemy"></div>
+      <div class="platform player"></div>
+      <div class="combatant" id="enemy-sprite"></div>
+      <div class="combatant" id="player-sprite"></div>
+
+      <div class="info-box" id="enemy-info">
+        <div class="row1"><span id="enemy-name"></span><span id="enemy-level">Lv50</span></div>
+        <div class="hp-track"><span class="hp-label">HP</span>
+          <div class="hp-outer"><div class="hp-inner" id="enemy-hp-bar"></div></div>
+        </div>
+        <div class="team-dots" id="enemy-dots"></div>
+      </div>
+
+      <div class="info-box" id="player-info">
+        <div class="row1"><span id="player-name"></span><span id="player-level">Lv50</span></div>
+        <div class="hp-track"><span class="hp-label">HP</span>
+          <div class="hp-outer"><div class="hp-inner" id="player-hp-bar"></div></div>
+        </div>
+        <div class="hp-text" id="player-hp-text"></div>
+        <div class="team-dots" id="player-dots"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div id="message-box">
+        <span id="message-text"></span>
+        <span class="continue" id="continue-arrow" style="display:none">▼ click</span>
+      </div>
+      <div id="menu-box">
+        <div id="menu-prompt"></div>
+        <div class="menu-grid" id="menu-grid"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Result -->
+<div id="result-overlay">
+  <div class="result-card">
+    <h2 id="result-title"></h2>
+    <p id="result-sub"></p>
+    <button class="big-btn" onclick="location.reload()">PLAY AGAIN</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ================= DATA ================= */
+
+const TYPE_COLORS = {
+  Fire: '#f08030', Water: '#6890f0', Grass: '#78c850', Electric: '#f8d030',
+  Rock: '#b8a038', Ice: '#98d8d8', Flying: '#a890f0', Ghost: '#705898', Normal: '#a8a878'
+};
+
+// chart[attacker][defender] = multiplier (1 if absent)
+const TYPE_CHART = {
+  Fire:     { Grass: 2, Ice: 2, Water: 0.5, Fire: 0.5, Rock: 0.5 },
+  Water:    { Fire: 2, Rock: 2, Water: 0.5, Grass: 0.5 },
+  Grass:    { Water: 2, Rock: 2, Fire: 0.5, Grass: 0.5, Flying: 0.5 },
+  Electric: { Water: 2, Flying: 2, Electric: 0.5, Grass: 0.5, Rock: 0.5 },
+  Rock:     { Fire: 2, Ice: 2, Flying: 2, Rock: 0.5 },
+  Ice:      { Grass: 2, Flying: 2, Ice: 0.5, Fire: 0.5, Water: 0.5 },
+  Flying:   { Grass: 2, Electric: 0.5, Rock: 0.5 },
+  Ghost:    { Ghost: 2, Normal: 0 },
+  Normal:   { Rock: 0.5, Ghost: 0 }
+};
+
+// All monsters are original creations, inspired by the genre.
+const SPECIES = [
+  {
+    name: 'Embercub', type: 'Fire', sprite: '🦊',
+    stats: { hp: 78, atk: 84, def: 68, spd: 90 },
+    moves: ['Flame Burst', 'Ember Claw', 'Quick Hit', 'Heat Howl']
+  },
+  {
+    name: 'Aquafin', type: 'Water', sprite: '🐬',
+    stats: { hp: 84, atk: 76, def: 80, spd: 72 },
+    moves: ['Hydro Jet', 'Bubble Snap', 'Tail Slam', 'Tidal Rush']
+  },
+  {
+    name: 'Thornling', type: 'Grass', sprite: '🦎',
+    stats: { hp: 86, atk: 80, def: 84, spd: 60 },
+    moves: ['Vine Lash', 'Leaf Blade', 'Seed Cannon', 'Headbutt']
+  },
+  {
+    name: 'Voltikit', type: 'Electric', sprite: '🐱',
+    stats: { hp: 70, atk: 82, def: 60, spd: 104 },
+    moves: ['Spark Bolt', 'Thunder Fang', 'Quick Hit', 'Static Surge']
+  },
+  {
+    name: 'Bouldox', type: 'Rock', sprite: '🐗',
+    stats: { hp: 96, atk: 92, def: 104, spd: 40 },
+    moves: ['Rock Smash', 'Stone Toss', 'Tail Slam', 'Quake Stomp']
+  },
+  {
+    name: 'Frostowl', type: 'Ice', sprite: '🦉',
+    stats: { hp: 76, atk: 78, def: 70, spd: 88 },
+    moves: ['Frost Beam', 'Icicle Dart', 'Wing Cutter', 'Blizzard Screech']
+  },
+  {
+    name: 'Galeon', type: 'Flying', sprite: '🦅',
+    stats: { hp: 74, atk: 88, def: 64, spd: 98 },
+    moves: ['Wing Cutter', 'Sky Dive', 'Gust Blade', 'Quick Hit']
+  },
+  {
+    name: 'Spectross', type: 'Ghost', sprite: '🦇',
+    stats: { hp: 72, atk: 86, def: 72, spd: 84 },
+    moves: ['Shadow Rake', 'Phantom Bite', 'Night Shriek', 'Quick Hit']
+  }
+];
+
+const MOVES = {
+  'Flame Burst':      { type: 'Fire',     power: 90, acc: 95,  pp: 10 },
+  'Ember Claw':       { type: 'Fire',     power: 65, acc: 100, pp: 20 },
+  'Heat Howl':        { type: 'Fire',     power: 75, acc: 95,  pp: 15 },
+  'Hydro Jet':        { type: 'Water',    power: 90, acc: 95,  pp: 10 },
+  'Bubble Snap':      { type: 'Water',    power: 60, acc: 100, pp: 20 },
+  'Tidal Rush':       { type: 'Water',    power: 75, acc: 95,  pp: 15 },
+  'Vine Lash':        { type: 'Grass',    power: 70, acc: 100, pp: 20 },
+  'Leaf Blade':       { type: 'Grass',    power: 90, acc: 95,  pp: 10 },
+  'Seed Cannon':      { type: 'Grass',    power: 80, acc: 95,  pp: 15 },
+  'Spark Bolt':       { type: 'Electric', power: 90, acc: 95,  pp: 10 },
+  'Thunder Fang':     { type: 'Electric', power: 65, acc: 100, pp: 20 },
+  'Static Surge':     { type: 'Electric', power: 75, acc: 95,  pp: 15 },
+  'Rock Smash':       { type: 'Rock',     power: 90, acc: 90,  pp: 10 },
+  'Stone Toss':       { type: 'Rock',     power: 60, acc: 100, pp: 20 },
+  'Quake Stomp':      { type: 'Rock',     power: 80, acc: 90,  pp: 15 },
+  'Frost Beam':       { type: 'Ice',      power: 90, acc: 95,  pp: 10 },
+  'Icicle Dart':      { type: 'Ice',      power: 60, acc: 100, pp: 20 },
+  'Blizzard Screech': { type: 'Ice',      power: 80, acc: 90,  pp: 15 },
+  'Wing Cutter':      { type: 'Flying',   power: 65, acc: 100, pp: 20 },
+  'Sky Dive':         { type: 'Flying',   power: 90, acc: 90,  pp: 10 },
+  'Gust Blade':       { type: 'Flying',   power: 75, acc: 95,  pp: 15 },
+  'Shadow Rake':      { type: 'Ghost',    power: 80, acc: 95,  pp: 15 },
+  'Phantom Bite':     { type: 'Ghost',    power: 65, acc: 100, pp: 20 },
+  'Night Shriek':     { type: 'Ghost',    power: 90, acc: 90,  pp: 10 },
+  'Quick Hit':        { type: 'Normal',   power: 55, acc: 100, pp: 30 },
+  'Tail Slam':        { type: 'Normal',   power: 70, acc: 100, pp: 20 },
+  'Headbutt':         { type: 'Normal',   power: 70, acc: 100, pp: 20 }
+};
+
+const LEVEL = 50;
+
+/* ================= MODEL ================= */
+
+function makeMonster(species) {
+  const maxHp = Math.floor(species.stats.hp * 2 + 60);
+  return {
+    species,
+    name: species.name,
+    type: species.type,
+    sprite: species.sprite,
+    atk: species.stats.atk,
+    def: species.stats.def,
+    spd: species.stats.spd,
+    maxHp,
+    hp: maxHp,
+    pp: Object.fromEntries(species.moves.map(m => [m, MOVES[m].pp]))
+  };
+}
+
+function effectiveness(moveType, defenderType) {
+  const row = TYPE_CHART[moveType] || {};
+  return row[defenderType] !== undefined ? row[defenderType] : 1;
+}
+
+function calcDamage(attacker, defender, move) {
+  const m = MOVES[move];
+  const eff = effectiveness(m.type, defender.type);
+  if (eff === 0) return { dmg: 0, eff, crit: false };
+  const crit = Math.random() < 1 / 16;
+  const stab = m.type === attacker.type ? 1.5 : 1;
+  const base = ((2 * LEVEL / 5 + 2) * m.power * attacker.atk / defender.def) / 50 + 2;
+  const rand = 0.85 + Math.random() * 0.15;
+  const dmg = Math.max(1, Math.floor(base * stab * eff * (crit ? 1.5 : 1) * rand));
+  return { dmg, eff, crit };
+}
+
+/* ================= GAME STATE ================= */
+
+const state = {
+  playerTeam: [],
+  enemyTeam: [],
+  playerActive: 0,
+  enemyActive: 0,
+  busy: false
+};
+
+const playerMon = () => state.playerTeam[state.playerActive];
+const enemyMon = () => state.enemyTeam[state.enemyActive];
+
+/* ================= TEAM SELECT ================= */
+
+const rosterEl = document.getElementById('roster');
+const startBtn = document.getElementById('start-btn');
+const picked = new Set();
+
+SPECIES.forEach((sp, i) => {
+  const card = document.createElement('div');
+  card.className = 'roster-card';
+  card.innerHTML = `
+    <div class="sprite">${sp.sprite}</div>
+    <div class="name">${sp.name}</div>
+    <span class="type-badge" style="background:${TYPE_COLORS[sp.type]}">${sp.type}</span>
+    <div class="stats">HP ${sp.stats.hp} · ATK ${sp.stats.atk}<br>DEF ${sp.stats.def} · SPD ${sp.stats.spd}</div>
+  `;
+  card.addEventListener('click', () => {
+    if (picked.has(i)) {
+      picked.delete(i);
+      card.classList.remove('selected');
+    } else if (picked.size < 3) {
+      picked.add(i);
+      card.classList.add('selected');
+    }
+    startBtn.disabled = picked.size !== 3;
+    startBtn.textContent = picked.size === 3 ? 'START BATTLE!' : `PICK ${3 - picked.size} MORE`;
+  });
+  rosterEl.appendChild(card);
+});
+
+startBtn.addEventListener('click', () => {
+  state.playerTeam = [...picked].map(i => makeMonster(SPECIES[i]));
+  // Rival picks 3 random distinct species
+  const pool = SPECIES.map((_, i) => i).sort(() => Math.random() - 0.5).slice(0, 3);
+  state.enemyTeam = pool.map(i => makeMonster(SPECIES[i]));
+  document.getElementById('select-screen').style.display = 'none';
+  document.getElementById('battle-screen').style.display = 'block';
+  beginBattle();
+});
+
+/* ================= UI HELPERS ================= */
+
+const $ = id => document.getElementById(id);
+
+function hpColor(ratio) {
+  if (ratio > 0.5) return 'var(--hp-green)';
+  if (ratio > 0.2) return 'var(--hp-yellow)';
+  return 'var(--hp-red)';
+}
+
+function renderSide(side, mon) {
+  $(`${side}-name`).textContent = mon.name + ' ' + mon.sprite;
+  $(`${side}-sprite`).textContent = mon.sprite;
+  $(`${side}-sprite`).classList.remove('fainted');
+  updateHp(side);
+  const dots = $(`${side}-dots`);
+  const team = side === 'player' ? state.playerTeam : state.enemyTeam;
+  dots.innerHTML = team.map(m => `<span class="dot ${m.hp <= 0 ? 'empty' : ''}"></span>`).join('');
+}
+
+function updateHp(side) {
+  const mon = side === 'player' ? playerMon() : enemyMon();
+  const ratio = Math.max(0, mon.hp / mon.maxHp);
+  const bar = $(`${side}-hp-bar`);
+  bar.style.width = (ratio * 100) + '%';
+  bar.style.backgroundColor = hpColor(ratio);
+  if (side === 'player') {
+    $('player-hp-text').textContent = `${Math.max(0, mon.hp)} / ${mon.maxHp}`;
+  }
+}
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// Show a message and wait for a click (or 2.2s, whichever first)
+function say(text) {
+  return new Promise(resolve => {
+    $('menu-box').style.display = 'none';
+    $('message-box').style.display = 'flex';
+    $('message-text').textContent = text;
+    $('continue-arrow').style.display = 'inline';
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      $('message-box').removeEventListener('click', finish);
+      clearTimeout(timer);
+      resolve();
+    };
+    const timer = setTimeout(finish, 2200);
+    $('message-box').addEventListener('click', finish);
+  });
+}
+
+function effectivenessText(eff) {
+  if (eff === 0) return "It doesn't affect the target...";
+  if (eff >= 2) return "It's super effective!";
+  if (eff < 1) return "It's not very effective...";
+  return null;
+}
+
+/* ================= MENUS ================= */
+
+function showMainMenu() {
+  state.busy = false;
+  $('message-box').style.display = 'none';
+  const menu = $('menu-box');
+  menu.style.display = 'flex';
+  $('menu-prompt').textContent = `What will ${playerMon().name} do?`;
+  const grid = $('menu-grid');
+  grid.innerHTML = '';
+
+  const fight = document.createElement('button');
+  fight.className = 'menu-btn';
+  fight.innerHTML = '⚔ FIGHT';
+  fight.addEventListener('click', showMoveMenu);
+  grid.appendChild(fight);
+
+  const sw = document.createElement('button');
+  sw.className = 'menu-btn';
+  sw.innerHTML = '🔄 SWITCH';
+  sw.disabled = !state.playerTeam.some((m, i) => m.hp > 0 && i !== state.playerActive);
+  sw.addEventListener('click', () => showSwitchMenu(false));
+  grid.appendChild(sw);
+}
+
+function showMoveMenu() {
+  const grid = $('menu-grid');
+  $('menu-prompt').textContent = 'Choose a move:';
+  grid.innerHTML = '';
+  const mon = playerMon();
+
+  mon.species.moves.forEach(name => {
+    const m = MOVES[name];
+    const eff = effectiveness(m.type, enemyMon().type);
+    const effIcon = eff >= 2 ? ' ▲' : (eff === 0 ? ' ✕' : (eff < 1 ? ' ▽' : ''));
+    const btn = document.createElement('button');
+    btn.className = 'menu-btn';
+    btn.style.borderColor = TYPE_COLORS[m.type];
+    btn.innerHTML = `${name}${effIcon}<span class="sub">${m.type} · PWR ${m.power} · PP ${mon.pp[name]}/${m.pp}</span>`;
+    btn.disabled = mon.pp[name] <= 0;
+    btn.addEventListener('click', () => playTurn(name));
+    grid.appendChild(btn);
+  });
+
+  const back = document.createElement('button');
+  back.className = 'menu-btn back-btn';
+  back.textContent = '↩ BACK';
+  back.addEventListener('click', showMainMenu);
+  grid.appendChild(back);
+}
+
+function showSwitchMenu(forced) {
+  $('message-box').style.display = 'none';
+  const menu = $('menu-box');
+  menu.style.display = 'flex';
+  $('menu-prompt').textContent = forced ? 'Choose your next monster!' : 'Switch to:';
+  const grid = $('menu-grid');
+  grid.innerHTML = '';
+
+  state.playerTeam.forEach((m, i) => {
+    if (i === state.playerActive && !forced) return;
+    const btn = document.createElement('button');
+    btn.className = 'menu-btn';
+    btn.innerHTML = `${m.sprite} ${m.name}<span class="sub">${m.type} · HP ${Math.max(0, m.hp)}/${m.maxHp}</span>`;
+    btn.disabled = m.hp <= 0 || i === state.playerActive;
+    btn.addEventListener('click', () => doSwitch(i, forced));
+    grid.appendChild(btn);
+  });
+
+  if (!forced) {
+    const back = document.createElement('button');
+    back.className = 'menu-btn back-btn';
+    back.textContent = '↩ BACK';
+    back.addEventListener('click', showMainMenu);
+    grid.appendChild(back);
+  }
+}
+
+/* ================= BATTLE FLOW ================= */
+
+async function beginBattle() {
+  renderSide('player', playerMon());
+  renderSide('enemy', enemyMon());
+  await say('Rival Blake wants to battle!');
+  await say(`Rival sent out ${enemyMon().name}!`);
+  await say(`Go, ${playerMon().name}!`);
+  showMainMenu();
+}
+
+function enemyChooseMove() {
+  // AI: weight moves by expected damage, mostly picks the best one
+  const mon = enemyMon();
+  const target = playerMon();
+  const options = mon.species.moves
+    .filter(name => mon.pp[name] > 0)
+    .map(name => {
+      const m = MOVES[name];
+      const score = m.power
+        * effectiveness(m.type, target.type)
+        * (m.type === mon.type ? 1.5 : 1)
+        * (m.acc / 100);
+      return { name, score };
+    })
+    .sort((a, b) => b.score - a.score);
+  if (options.length === 0) return null;
+  return (Math.random() < 0.8 ? options[0] : options[Math.floor(Math.random() * options.length)]).name;
+}
+
+async function executeMove(side, move) {
+  const attacker = side === 'player' ? playerMon() : enemyMon();
+  const defender = side === 'player' ? enemyMon() : playerMon();
+  const defSide = side === 'player' ? 'enemy' : 'player';
+
+  attacker.pp[move]--;
+  await say(`${side === 'player' ? '' : 'Enemy '}${attacker.name} used ${move}!`);
+
+  const atkSprite = $(`${side}-sprite`);
+  atkSprite.classList.add('attacking');
+  setTimeout(() => atkSprite.classList.remove('attacking'), 450);
+  await sleep(250);
+
+  if (Math.random() * 100 > MOVES[move].acc) {
+    await say(`${attacker.name}'s attack missed!`);
+    return false;
+  }
+
+  const { dmg, eff, crit } = calcDamage(attacker, defender, move);
+  if (eff !== 0) {
+    const defSprite = $(`${defSide}-sprite`);
+    defSprite.classList.add('hit');
+    setTimeout(() => defSprite.classList.remove('hit'), 500);
+  }
+  defender.hp -= dmg;
+  updateHp(defSide);
+  await sleep(450);
+
+  if (crit && eff !== 0) await say('A critical hit!');
+  const effMsg = effectivenessText(eff);
+  if (effMsg) await say(effMsg);
+
+  if (defender.hp <= 0) {
+    defender.hp = 0;
+    $(`${defSide}-sprite`).classList.add('fainted');
+    renderSideDots(defSide);
+    await say(`${defSide === 'enemy' ? 'Enemy ' : ''}${defender.name} fainted!`);
+    return true; // defender fainted
+  }
+  return false;
+}
+
+function renderSideDots(side) {
+  const team = side === 'player' ? state.playerTeam : state.enemyTeam;
+  $(`${side}-dots`).innerHTML = team.map(m => `<span class="dot ${m.hp <= 0 ? 'empty' : ''}"></span>`).join('');
+}
+
+async function playTurn(playerMove) {
+  if (state.busy) return;
+  state.busy = true;
+  $('menu-box').style.display = 'none';
+
+  const enemyMove = enemyChooseMove();
+  const playerFirst = playerMon().spd === enemyMon().spd
+    ? Math.random() < 0.5
+    : playerMon().spd > enemyMon().spd;
+
+  const order = playerFirst
+    ? [['player', playerMove], ['enemy', enemyMove]]
+    : [['enemy', enemyMove], ['player', playerMove]];
+
+  for (const [side, move] of order) {
+    if (!move) {
+      await say(`${side === 'player' ? playerMon().name : 'Enemy ' + enemyMon().name} has no moves left and flails about!`);
+      continue;
+    }
+    // Skip if this combatant already fainted earlier in the turn
+    const actor = side === 'player' ? playerMon() : enemyMon();
+    if (actor.hp <= 0) continue;
+
+    const fainted = await executeMove(side, move);
+    if (fainted) {
+      if (await handleFaint(side === 'player' ? 'enemy' : 'player')) return; // battle over or waiting on switch
+      break; // turn ends when someone faints
+    }
+  }
+  showMainMenu();
+}
+
+// Returns true if the turn flow should stop here (battle ended or player is choosing a switch)
+async function handleFaint(faintedSide) {
+  if (faintedSide === 'enemy') {
+    const next = state.enemyTeam.findIndex(m => m.hp > 0);
+    if (next === -1) {
+      endBattle(true);
+      return true;
+    }
+    state.enemyActive = next;
+    await say(`Rival sent out ${enemyMon().name}!`);
+    renderSide('enemy', enemyMon());
+    return false;
+  } else {
+    if (!state.playerTeam.some(m => m.hp > 0)) {
+      endBattle(false);
+      return true;
+    }
+    showSwitchMenu(true);
+    return true; // wait for player's forced switch choice
+  }
+}
+
+async function doSwitch(index, forced) {
+  $('menu-box').style.display = 'none';
+  state.busy = true;
+
+  if (!forced) {
+    await say(`${playerMon().name}, come back!`);
+    state.playerActive = index;
+    renderSide('player', playerMon());
+    await say(`Go, ${playerMon().name}!`);
+    // Switching costs your turn: the enemy attacks
+    const enemyMove = enemyChooseMove();
+    if (enemyMove) {
+      const fainted = await executeMove('enemy', enemyMove);
+      if (fainted && await handleFaint('player')) return;
+    }
+  } else {
+    state.playerActive = index;
+    renderSide('player', playerMon());
+    await say(`Go, ${playerMon().name}!`);
+  }
+  showMainMenu();
+}
+
+function endBattle(won) {
+  $('result-title').textContent = won ? '🏆 YOU WIN!' : '💀 YOU LOSE...';
+  $('result-sub').textContent = won
+    ? 'Rival Blake was defeated. Your team is victorious!'
+    : 'All your monsters fainted. Better luck next time!';
+  $('result-overlay').style.display = 'flex';
+}
+</script>
+</body>
+</html>
