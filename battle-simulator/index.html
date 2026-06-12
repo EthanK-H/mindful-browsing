@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Monster Battle Simulator</title>
+<title>Monster Quest</title>
 <style>
   :root {
     --screen-bg: #f8f8e8;
@@ -22,22 +22,19 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 16px;
+    padding: 12px;
     color: #222;
   }
 
-  .game-shell {
-    width: 100%;
-    max-width: 720px;
-  }
+  .game-shell { width: 100%; max-width: 700px; }
 
   h1.title {
     text-align: center;
     color: #f8d030;
     text-shadow: 3px 3px 0 #383030;
-    font-size: 28px;
+    font-size: 24px;
     letter-spacing: 2px;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
   }
 
   .screen {
@@ -48,64 +45,73 @@
     box-shadow: 0 10px 40px rgba(0,0,0,0.6);
   }
 
-  /* ============ SELECT SCREEN ============ */
-  #select-screen { padding: 20px; }
+  /* ============ OVERWORLD ============ */
+  #overworld { display: none; }
 
-  #select-screen h2 {
-    text-align: center;
-    margin-bottom: 4px;
-    font-size: 20px;
-  }
-
-  #select-screen .hint {
-    text-align: center;
-    color: #666;
+  #hud {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 7px 12px;
+    background: #383030;
+    color: #f8f8e8;
     font-size: 13px;
-    margin-bottom: 16px;
-  }
-
-  .roster {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 12px;
-    margin-bottom: 16px;
-  }
-
-  .roster-card {
-    background: #fff;
-    border: 3px solid #b0a890;
-    border-radius: 10px;
-    padding: 10px;
-    text-align: center;
-    cursor: pointer;
-    transition: transform 0.1s, border-color 0.1s, box-shadow 0.1s;
-    user-select: none;
-  }
-
-  .roster-card:hover { transform: translateY(-3px); box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
-
-  .roster-card.selected {
-    border-color: #e03028;
-    background: #fff4f0;
-    box-shadow: 0 0 0 2px #e03028;
-  }
-
-  .roster-card .sprite { font-size: 42px; line-height: 1.2; }
-  .roster-card .name { font-weight: bold; font-size: 15px; margin-top: 4px; }
-  .roster-card .stats { font-size: 11px; color: #555; margin-top: 4px; line-height: 1.5; }
-
-  .type-badge {
-    display: inline-block;
-    padding: 1px 8px;
-    border-radius: 8px;
-    font-size: 10px;
     font-weight: bold;
-    color: #fff;
-    text-transform: uppercase;
-    margin-top: 4px;
+    flex-wrap: wrap;
   }
+  #hud .spacer { flex: 1; }
+  #hud button {
+    font-family: inherit;
+    font-weight: bold;
+    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: 6px;
+    border: 2px solid #f8d030;
+    background: #584830;
+    color: #f8d030;
+    cursor: pointer;
+  }
+  #hud button:hover { background: #6a5838; }
 
-  .start-row { text-align: center; }
+  #ow-wrap { position: relative; line-height: 0; }
+  #ow-canvas { width: 100%; height: auto; display: block; image-rendering: pixelated; }
+
+  #ow-dialog {
+    position: absolute;
+    left: 10px; right: 10px; bottom: 10px;
+    background: var(--screen-bg);
+    border: 4px solid var(--ui-border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 16px;
+    line-height: 1.5;
+    display: none;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  }
+  #ow-dialog-text { min-height: 24px; white-space: pre-line; }
+  #ow-arrow { float: right; color: #888; font-size: 13px; animation: bob 0.8s infinite alternate; }
+  #ow-choices { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  #ow-choices button {
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: bold;
+    padding: 7px 14px;
+    border: 3px solid var(--ui-border);
+    border-radius: 8px;
+    background: #fff;
+    cursor: pointer;
+  }
+  #ow-choices button:hover { background: #f8f0d8; }
+
+  .keys-hint {
+    padding: 6px 12px;
+    font-size: 11px;
+    color: #888;
+    background: #efe8d8;
+    border-top: 3px solid var(--ui-border);
+    text-align: center;
+  }
 
   /* ============ BATTLE SCREEN ============ */
   #battle-screen { display: none; }
@@ -116,11 +122,31 @@
     background: linear-gradient(to bottom, #a8e0f8 0%, #c8ecf8 55%, #88c860 55%, #a8d878 100%);
     overflow: hidden;
   }
+  @keyframes quake {
+    0%,100% { transform: translate(0,0); }
+    20% { transform: translate(-7px,3px); }
+    40% { transform: translate(7px,-3px); }
+    60% { transform: translate(-5px,-4px); }
+    80% { transform: translate(5px,4px); }
+  }
+  .arena.quake { animation: quake 0.4s; }
+
+  #fx-canvas {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 5;
+  }
+  #fx-flash {
+    position: absolute; inset: 0;
+    pointer-events: none;
+    opacity: 0;
+    z-index: 4;
+  }
 
   .platform {
     position: absolute;
-    width: 200px;
-    height: 44px;
+    width: 200px; height: 44px;
     background: radial-gradient(ellipse at center, #d8c878 0%, #c0a858 70%, transparent 71%);
     border-radius: 50%;
   }
@@ -132,13 +158,14 @@
     font-size: 76px;
     line-height: 1;
     filter: drop-shadow(2px 4px 3px rgba(0,0,0,0.3));
-    transition: opacity 0.4s, transform 0.4s;
+    transition: opacity 0.4s, transform 0.35s;
+    z-index: 3;
   }
   #enemy-sprite { top: 58px; right: 96px; }
   #player-sprite { bottom: 26px; left: 96px; transform: scaleX(-1); }
 
-  .combatant.fainted { opacity: 0; transform: translateY(60px); }
-  #player-sprite.fainted { transform: scaleX(-1) translateY(60px); }
+  .combatant.fainted { opacity: 0; transform: translateY(60px) rotate(35deg); }
+  #player-sprite.fainted { transform: scaleX(-1) translateY(60px) rotate(-35deg); }
 
   @keyframes shake {
     0%, 100% { margin-left: 0; }
@@ -149,13 +176,20 @@
   }
   .combatant.hit { animation: shake 0.45s ease; }
 
+  @keyframes hitflash {
+    0%, 100% { filter: drop-shadow(2px 4px 3px rgba(0,0,0,0.3)) brightness(1); }
+    25%, 75% { filter: drop-shadow(2px 4px 3px rgba(0,0,0,0.3)) brightness(3); }
+    50% { filter: drop-shadow(2px 4px 3px rgba(0,0,0,0.3)) brightness(0.6); }
+  }
+  .combatant.flash { animation: hitflash 0.45s; }
+
   @keyframes lunge-right {
     0%, 100% { margin-top: 0; margin-left: 0; }
-    40% { margin-left: 28px; margin-top: -14px; }
+    40% { margin-left: 30px; margin-top: -14px; }
   }
   @keyframes lunge-left {
     0%, 100% { margin-top: 0; margin-right: 0; }
-    40% { margin-right: 28px; margin-top: 14px; }
+    40% { margin-right: 30px; margin-top: 14px; }
   }
   #player-sprite.attacking { animation: lunge-right 0.4s ease; }
   #enemy-sprite.attacking { animation: lunge-left 0.4s ease; }
@@ -168,6 +202,7 @@
     border-radius: 8px;
     padding: 8px 12px;
     box-shadow: 3px 3px 0 rgba(0,0,0,0.25);
+    z-index: 6;
   }
   #enemy-info { top: 18px; left: 18px; }
   #player-info { bottom: 18px; right: 18px; }
@@ -180,40 +215,20 @@
     font-size: 14px;
   }
 
-  .hp-track {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-top: 6px;
-  }
+  .hp-track { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
   .hp-label {
-    font-size: 10px;
-    font-weight: bold;
-    color: #f8a830;
-    background: #484038;
-    padding: 1px 5px;
-    border-radius: 4px;
+    font-size: 10px; font-weight: bold;
+    color: #f8a830; background: #484038;
+    padding: 1px 5px; border-radius: 4px;
   }
-  .hp-outer {
-    flex: 1;
-    height: 10px;
-    background: #585048;
-    border-radius: 5px;
-    padding: 2px;
-  }
+  .hp-outer { flex: 1; height: 10px; background: #585048; border-radius: 5px; padding: 2px; }
   .hp-inner {
-    height: 100%;
-    width: 100%;
+    height: 100%; width: 100%;
     background: var(--hp-green);
     border-radius: 3px;
     transition: width 0.7s ease, background-color 0.7s;
   }
-  .hp-text {
-    text-align: right;
-    font-size: 12px;
-    font-weight: bold;
-    margin-top: 4px;
-  }
+  .hp-text { text-align: right; font-size: 12px; font-weight: bold; margin-top: 4px; }
 
   .team-dots { display: flex; gap: 4px; margin-top: 6px; }
   .team-dots .dot {
@@ -225,12 +240,7 @@
   .team-dots .dot.empty { background: transparent; }
 
   /* ============ MESSAGE / MENU PANEL ============ */
-  .panel {
-    border-top: 6px solid var(--ui-border);
-    background: #fff;
-    min-height: 130px;
-    display: flex;
-  }
+  .panel { border-top: 6px solid var(--ui-border); background: #fff; min-height: 138px; display: flex; }
 
   #message-box {
     flex: 1;
@@ -245,25 +255,14 @@
   #message-box .continue {
     align-self: flex-end;
     animation: bob 0.8s infinite alternate;
-    font-size: 14px;
-    color: #888;
+    font-size: 13px; color: #888;
   }
   @keyframes bob { from { transform: translateY(0); } to { transform: translateY(4px); } }
 
-  #menu-box {
-    flex: 1;
-    display: none;
-    flex-direction: column;
-    padding: 12px 16px;
-  }
+  #menu-box { flex: 1; display: none; flex-direction: column; padding: 12px 16px; }
   #menu-prompt { font-size: 15px; font-weight: bold; margin-bottom: 8px; }
 
-  .menu-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    flex: 1;
-  }
+  .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; flex: 1; }
 
   .menu-btn {
     font-family: inherit;
@@ -282,45 +281,90 @@
   .menu-btn .sub { display: block; font-size: 11px; font-weight: normal; color: #666; margin-top: 2px; }
   .menu-btn.back-btn { background: #f0e8e8; text-align: center; }
 
-  /* ============ RESULT OVERLAY ============ */
-  #result-overlay {
-    position: fixed;
-    inset: 0;
+  /* ============ OVERLAYS ============ */
+  .overlay {
+    position: fixed; inset: 0;
     background: rgba(10, 10, 30, 0.85);
     display: none;
     align-items: center;
     justify-content: center;
     z-index: 50;
+    padding: 16px;
   }
-  .result-card {
+  .overlay-card {
     background: var(--screen-bg);
     border: 6px solid var(--ui-border);
     border-radius: 14px;
-    padding: 36px 48px;
+    padding: 28px 36px;
     text-align: center;
     animation: pop-in 0.35s ease;
+    max-width: 460px;
+    width: 100%;
   }
   @keyframes pop-in {
     from { transform: scale(0.7); opacity: 0; }
     to { transform: scale(1); opacity: 1; }
   }
-  .result-card h2 { font-size: 30px; margin-bottom: 8px; }
-  .result-card p { color: #555; margin-bottom: 20px; }
+  .overlay-card h2 { font-size: 26px; margin-bottom: 8px; }
+  .overlay-card p { color: #555; margin-bottom: 18px; font-size: 14px; line-height: 1.5; }
 
   .big-btn {
     font-family: inherit;
-    font-size: 16px;
+    font-size: 15px;
     font-weight: bold;
-    padding: 12px 32px;
+    padding: 11px 26px;
     border: 4px solid var(--ui-border);
     border-radius: 10px;
     background: #f8d030;
     cursor: pointer;
     box-shadow: 0 4px 0 #b89820;
     transition: transform 0.05s, box-shadow 0.05s;
+    margin: 4px;
   }
   .big-btn:hover { transform: translateY(2px); box-shadow: 0 2px 0 #b89820; }
-  .big-btn:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+  .big-btn.secondary { background: #e8e0d0; box-shadow: 0 4px 0 #a89878; }
+
+  /* party panel */
+  #party-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; max-height: 50vh; overflow-y: auto; }
+  .party-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 3px solid #b0a890;
+    border-radius: 10px;
+    background: #fff;
+    padding: 8px 12px;
+    cursor: pointer;
+    text-align: left;
+  }
+  .party-card:hover { border-color: #383030; }
+  .party-card.lead { border-color: #e0a020; background: #fff8e0; }
+  .party-card .psprite { font-size: 34px; }
+  .party-card .pinfo { flex: 1; font-size: 13px; line-height: 1.5; }
+  .party-card .pinfo b { font-size: 14px; }
+  .party-card .mini-hp { height: 7px; background: #585048; border-radius: 4px; padding: 1px; margin-top: 3px; }
+  .party-card .mini-hp > div { height: 100%; border-radius: 3px; background: var(--hp-green); }
+
+  /* battle transition */
+  #battle-flash {
+    position: fixed; inset: 0;
+    background: #fff;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 60;
+  }
+  @keyframes bflash { 0%,100% { opacity: 0; } 50% { opacity: 1; } }
+  #battle-flash.flashing { animation: bflash 0.3s 2; }
+
+  .type-badge {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 8px;
+    font-size: 10px;
+    font-weight: bold;
+    color: #fff;
+    text-transform: uppercase;
+  }
 
   @media (max-width: 560px) {
     .arena { height: 280px; }
@@ -336,28 +380,42 @@
 </head>
 <body>
 <div class="game-shell">
-  <h1 class="title">⚔ MONSTER BATTLE ⚔</h1>
+  <h1 class="title">⚔ MONSTER QUEST ⚔</h1>
 
-  <!-- Team select -->
-  <div class="screen" id="select-screen">
-    <h2>Choose Your Team</h2>
-    <p class="hint">Pick 3 monsters. Your rival will assemble a team of their own!</p>
-    <div class="roster" id="roster"></div>
-    <div class="start-row">
-      <button class="big-btn" id="start-btn" disabled>PICK 3 MONSTERS</button>
+  <!-- ============ OVERWORLD ============ -->
+  <div class="screen" id="overworld">
+    <div id="hud">
+      <span id="hud-loc">Willowbrook</span>
+      <span>💰 <span id="hud-money">0</span></span>
+      <span>⚪ <span id="hud-orbs">0</span></span>
+      <span>🧪 <span id="hud-potions">0</span></span>
+      <span id="hud-badges"></span>
+      <span class="spacer"></span>
+      <button id="team-btn">TEAM (P)</button>
     </div>
+    <div id="ow-wrap">
+      <canvas id="ow-canvas" width="640" height="448"></canvas>
+      <div id="ow-dialog">
+        <div id="ow-dialog-text"></div>
+        <span id="ow-arrow">▼</span>
+        <div id="ow-choices"></div>
+      </div>
+    </div>
+    <div class="keys-hint">Move: WASD / Arrows &nbsp;·&nbsp; Interact / Advance: E, Space or Enter &nbsp;·&nbsp; Team: P</div>
   </div>
 
-  <!-- Battle -->
+  <!-- ============ BATTLE ============ -->
   <div class="screen" id="battle-screen">
-    <div class="arena">
+    <div class="arena" id="arena">
       <div class="platform enemy"></div>
       <div class="platform player"></div>
       <div class="combatant" id="enemy-sprite"></div>
       <div class="combatant" id="player-sprite"></div>
+      <div id="fx-flash"></div>
+      <canvas id="fx-canvas" width="688" height="320"></canvas>
 
       <div class="info-box" id="enemy-info">
-        <div class="row1"><span id="enemy-name"></span><span id="enemy-level">Lv50</span></div>
+        <div class="row1"><span id="enemy-name"></span><span id="enemy-level"></span></div>
         <div class="hp-track"><span class="hp-label">HP</span>
           <div class="hp-outer"><div class="hp-inner" id="enemy-hp-bar"></div></div>
         </div>
@@ -365,7 +423,7 @@
       </div>
 
       <div class="info-box" id="player-info">
-        <div class="row1"><span id="player-name"></span><span id="player-level">Lv50</span></div>
+        <div class="row1"><span id="player-name"></span><span id="player-level"></span></div>
         <div class="hp-track"><span class="hp-label">HP</span>
           <div class="hp-outer"><div class="hp-inner" id="player-hp-bar"></div></div>
         </div>
@@ -377,7 +435,7 @@
     <div class="panel">
       <div id="message-box">
         <span id="message-text"></span>
-        <span class="continue" id="continue-arrow" style="display:none">▼ click</span>
+        <span class="continue" id="continue-arrow" style="display:none">▼ click / E</span>
       </div>
       <div id="menu-box">
         <div id="menu-prompt"></div>
@@ -387,26 +445,72 @@
   </div>
 </div>
 
-<!-- Result -->
-<div id="result-overlay">
-  <div class="result-card">
-    <h2 id="result-title"></h2>
-    <p id="result-sub"></p>
-    <button class="big-btn" onclick="location.reload()">PLAY AGAIN</button>
+<!-- ============ OVERLAYS ============ -->
+<div class="overlay" id="title-overlay">
+  <div class="overlay-card">
+    <h2>⚔ MONSTER QUEST ⚔</h2>
+    <p>Explore three towns, catch wild monsters in the tall grass,
+       and defeat the two Gym Leaders to become Champion!</p>
+    <button class="big-btn" id="continue-btn" style="display:none">CONTINUE</button>
+    <button class="big-btn secondary" id="newgame-btn">NEW GAME</button>
   </div>
 </div>
+
+<div class="overlay" id="party-overlay">
+  <div class="overlay-card">
+    <h2>Your Team</h2>
+    <p>Click a monster to make it your lead.</p>
+    <div id="party-list"></div>
+    <button class="big-btn" id="party-close">CLOSE</button>
+  </div>
+</div>
+
+<div class="overlay" id="champion-overlay">
+  <div class="overlay-card">
+    <h2>🏆 CHAMPION!</h2>
+    <p>You've earned every badge in the region! Your name will be
+       remembered in the Hall of Fame. You can keep exploring,
+       catching, and battling as long as you like.</p>
+    <button class="big-btn" id="champ-continue">KEEP PLAYING</button>
+    <button class="big-btn secondary" id="champ-newgame">NEW GAME</button>
+  </div>
+</div>
+
+<div id="battle-flash"></div>
 
 <script>
 'use strict';
 
-/* ================= DATA ================= */
+/* =====================================================
+   UTILITIES
+   ===================================================== */
+const $ = id => document.getElementById(id);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const rand = (a, b) => a + Math.random() * (b - a);
+const randInt = (a, b) => Math.floor(rand(a, b + 1));
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
+function tweenFrames(ms, fn) {
+  return new Promise(resolve => {
+    const t0 = performance.now();
+    function step(t) {
+      const k = Math.min(1, (t - t0) / ms);
+      fn(k);
+      if (k < 1) requestAnimationFrame(step);
+      else resolve();
+    }
+    requestAnimationFrame(step);
+  });
+}
+
+/* =====================================================
+   DATA — TYPES & MOVES
+   ===================================================== */
 const TYPE_COLORS = {
   Fire: '#f08030', Water: '#6890f0', Grass: '#78c850', Electric: '#f8d030',
   Rock: '#b8a038', Ice: '#98d8d8', Flying: '#a890f0', Ghost: '#705898', Normal: '#a8a878'
 };
 
-// chart[attacker][defender] = multiplier (1 if absent)
 const TYPE_CHART = {
   Fire:     { Grass: 2, Ice: 2, Water: 0.5, Fire: 0.5, Rock: 0.5 },
   Water:    { Fire: 2, Rock: 2, Water: 0.5, Grass: 0.5 },
@@ -418,50 +522,6 @@ const TYPE_CHART = {
   Ghost:    { Ghost: 2, Normal: 0 },
   Normal:   { Rock: 0.5, Ghost: 0 }
 };
-
-// All monsters are original creations, inspired by the genre.
-const SPECIES = [
-  {
-    name: 'Embercub', type: 'Fire', sprite: '🦊',
-    stats: { hp: 78, atk: 84, def: 68, spd: 90 },
-    moves: ['Flame Burst', 'Ember Claw', 'Quick Hit', 'Heat Howl']
-  },
-  {
-    name: 'Aquafin', type: 'Water', sprite: '🐬',
-    stats: { hp: 84, atk: 76, def: 80, spd: 72 },
-    moves: ['Hydro Jet', 'Bubble Snap', 'Tail Slam', 'Tidal Rush']
-  },
-  {
-    name: 'Thornling', type: 'Grass', sprite: '🦎',
-    stats: { hp: 86, atk: 80, def: 84, spd: 60 },
-    moves: ['Vine Lash', 'Leaf Blade', 'Seed Cannon', 'Headbutt']
-  },
-  {
-    name: 'Voltikit', type: 'Electric', sprite: '🐱',
-    stats: { hp: 70, atk: 82, def: 60, spd: 104 },
-    moves: ['Spark Bolt', 'Thunder Fang', 'Quick Hit', 'Static Surge']
-  },
-  {
-    name: 'Bouldox', type: 'Rock', sprite: '🐗',
-    stats: { hp: 96, atk: 92, def: 104, spd: 40 },
-    moves: ['Rock Smash', 'Stone Toss', 'Tail Slam', 'Quake Stomp']
-  },
-  {
-    name: 'Frostowl', type: 'Ice', sprite: '🦉',
-    stats: { hp: 76, atk: 78, def: 70, spd: 88 },
-    moves: ['Frost Beam', 'Icicle Dart', 'Wing Cutter', 'Blizzard Screech']
-  },
-  {
-    name: 'Galeon', type: 'Flying', sprite: '🦅',
-    stats: { hp: 74, atk: 88, def: 64, spd: 98 },
-    moves: ['Wing Cutter', 'Sky Dive', 'Gust Blade', 'Quick Hit']
-  },
-  {
-    name: 'Spectross', type: 'Ghost', sprite: '🦇',
-    stats: { hp: 72, atk: 86, def: 72, spd: 84 },
-    moves: ['Shadow Rake', 'Phantom Bite', 'Night Shriek', 'Quick Hit']
-  }
-];
 
 const MOVES = {
   'Flame Burst':      { type: 'Fire',     power: 90, acc: 95,  pp: 10 },
@@ -490,27 +550,311 @@ const MOVES = {
   'Night Shriek':     { type: 'Ghost',    power: 90, acc: 90,  pp: 10 },
   'Quick Hit':        { type: 'Normal',   power: 55, acc: 100, pp: 30 },
   'Tail Slam':        { type: 'Normal',   power: 70, acc: 100, pp: 20 },
-  'Headbutt':         { type: 'Normal',   power: 70, acc: 100, pp: 20 }
+  'Headbutt':         { type: 'Normal',   power: 70, acc: 100, pp: 20 },
+  'Pounce':           { type: 'Normal',   power: 50, acc: 100, pp: 25 },
+  'Flail':            { type: 'Normal',   power: 35, acc: 100, pp: Infinity }
 };
 
-const LEVEL = 50;
+/* =====================================================
+   DATA — SPECIES (all original creatures)
+   ===================================================== */
+const SPECIES = {
+  Embercub:  { type: 'Fire',     sprite: '🦊', catchRate: 0.45,
+               base: { hp: 78, atk: 84, def: 68, spd: 90 },
+               moves: ['Ember Claw', 'Quick Hit', 'Heat Howl', 'Flame Burst'] },
+  Aquafin:   { type: 'Water',    sprite: '🐬', catchRate: 0.45,
+               base: { hp: 84, atk: 76, def: 80, spd: 72 },
+               moves: ['Bubble Snap', 'Tail Slam', 'Tidal Rush', 'Hydro Jet'] },
+  Thornling: { type: 'Grass',    sprite: '🦎', catchRate: 0.45,
+               base: { hp: 86, atk: 80, def: 84, spd: 60 },
+               moves: ['Vine Lash', 'Headbutt', 'Seed Cannon', 'Leaf Blade'] },
+  Voltikit:  { type: 'Electric', sprite: '🐱', catchRate: 0.5,
+               base: { hp: 70, atk: 82, def: 60, spd: 104 },
+               moves: ['Thunder Fang', 'Quick Hit', 'Static Surge', 'Spark Bolt'] },
+  Bouldox:   { type: 'Rock',     sprite: '🐗', catchRate: 0.4,
+               base: { hp: 96, atk: 92, def: 104, spd: 40 },
+               moves: ['Stone Toss', 'Tail Slam', 'Quake Stomp', 'Rock Smash'] },
+  Frostowl:  { type: 'Ice',      sprite: '🦉', catchRate: 0.5,
+               base: { hp: 76, atk: 78, def: 70, spd: 88 },
+               moves: ['Icicle Dart', 'Wing Cutter', 'Blizzard Screech', 'Frost Beam'] },
+  Galeon:    { type: 'Flying',   sprite: '🦅', catchRate: 0.5,
+               base: { hp: 74, atk: 88, def: 64, spd: 98 },
+               moves: ['Wing Cutter', 'Quick Hit', 'Gust Blade', 'Sky Dive'] },
+  Spectross: { type: 'Ghost',    sprite: '🦇', catchRate: 0.45,
+               base: { hp: 72, atk: 86, def: 72, spd: 84 },
+               moves: ['Phantom Bite', 'Quick Hit', 'Shadow Rake', 'Night Shriek'] },
+  Fluffit:   { type: 'Normal',   sprite: '🐹', catchRate: 0.8,
+               base: { hp: 64, atk: 58, def: 54, spd: 66 },
+               moves: ['Pounce', 'Quick Hit', 'Tail Slam', 'Headbutt'] },
+  Sproutle:  { type: 'Grass',    sprite: '🌱', catchRate: 0.8,
+               base: { hp: 60, atk: 62, def: 60, spd: 56 },
+               moves: ['Pounce', 'Vine Lash', 'Quick Hit', 'Seed Cannon'] },
+  Pebblit:   { type: 'Rock',     sprite: '🐢', catchRate: 0.8,
+               base: { hp: 66, atk: 60, def: 78, spd: 38 },
+               moves: ['Pounce', 'Stone Toss', 'Headbutt', 'Rock Smash'] },
+  Buzzlet:   { type: 'Electric', sprite: '🐝', catchRate: 0.8,
+               base: { hp: 56, atk: 64, def: 50, spd: 80 },
+               moves: ['Pounce', 'Thunder Fang', 'Quick Hit', 'Spark Bolt'] },
+  Scorchion: { type: 'Fire',     sprite: '🦂', catchRate: 0.55,
+               base: { hp: 70, atk: 80, def: 74, spd: 64 },
+               moves: ['Ember Claw', 'Pounce', 'Heat Howl', 'Flame Burst'] },
+  Snapjaw:   { type: 'Water',    sprite: '🐊', catchRate: 0.55,
+               base: { hp: 80, atk: 84, def: 78, spd: 54 },
+               moves: ['Bubble Snap', 'Headbutt', 'Tidal Rush', 'Hydro Jet'] }
+};
 
-/* ================= MODEL ================= */
+const STARTERS = ['Embercub', 'Aquafin', 'Thornling'];
 
-function makeMonster(species) {
-  const maxHp = Math.floor(species.stats.hp * 2 + 60);
+/* =====================================================
+   DATA — WORLD MAPS (20 x 14 tiles)
+   Legend: # tree · . path · , flowers · T tall grass · W water
+           L/l lab · H/h heal center · M/m shop · G/g gym · S sign
+   ===================================================== */
+const TILE = 32;
+const MAP_W = 20, MAP_H = 14;
+
+const MAPS = {
+  willowbrook: {
+    label: 'Willowbrook Town',
+    rows: [
+      "#########.##########",
+      "#,,..............,,#",
+      "#..LLLL....HHHH....#",
+      "#..LLlL....HHhH....#",
+      "#..................#",
+      "#....S.............#",
+      "#..................#",
+      "#...,,,......,,,...#",
+      "#..................#",
+      "#..................#",
+      "#,,..............,,#",
+      "#,,,,,,,,,,,,,,,,,,#",
+      "####################",
+      "####################"
+    ],
+    warps: [{ x: 9, y: 0, map: 'route1', tx: 9, ty: 12 }],
+    signs: { '5,5': 'WILLOWBROOK TOWN\n"Where every journey begins."\nProf. Willow\'s lab is to the northwest.' },
+    npcs: [
+      {
+        id: 'assistant', sprite: '🧑‍🔬', name: 'Assistant',
+        pos: () => G.flags.starter ? { x: 7, y: 1 } : { x: 9, y: 1 },
+        lines: () => G.flags.starter
+          ? ['Route 1 is just north of here.', 'Tall grass hides wild monsters — weaken them, then throw a Capture Orb!']
+          : ['Whoa there! The tall grass is dangerous without a monster of your own.', 'Professor Willow has a gift for you in the LAB — the building with the 🔬!']
+      },
+      {
+        id: 'granny', sprite: '👵', pos: () => ({ x: 14, y: 8 }), name: 'Granny',
+        lines: () => ['In my day we walked everywhere too.', 'Press P to check on your team, dearie.']
+      }
+    ],
+    wild: null
+  },
+
+  route1: {
+    label: 'Route 1',
+    rows: [
+      "#########.##########",
+      "#..TTTT...........,#",
+      "#..TTTT...S........#",
+      "#..TTTT............#",
+      "#..................#",
+      "#######...##########",
+      "#######...##########",
+      "#..................#",
+      "#............TTTT..#",
+      "#....,,.....TTTT...#",
+      "#............TTTT..#",
+      "#..................#",
+      "#..................#",
+      "#########.##########"
+    ],
+    warps: [
+      { x: 9, y: 13, map: 'willowbrook', tx: 9, ty: 1 },
+      { x: 9, y: 0, map: 'emberton', tx: 9, ty: 12 }
+    ],
+    signs: { '10,2': 'ROUTE 1\nNorth: Emberton Town · South: Willowbrook' },
+    npcs: [
+      {
+        id: 'ben', sprite: '🧒', name: 'Youngster Ben', pos: () => ({ x: 5, y: 9 }),
+        trainer: {
+          id: 'ben', title: 'Youngster Ben', reward: 300,
+          team: [['Fluffit', 5], ['Buzzlet', 6]],
+          intro: 'My monsters and I train here every day!',
+          win: 'Aww, you\'re strong! Here, take some prize money.',
+          after: 'Emberton\'s Gym Leader uses FIRE types. Water or Rock moves will help!'
+        }
+      }
+    ],
+    wild: { levels: [3, 5], table: [['Fluffit', 30], ['Sproutle', 25], ['Buzzlet', 25], ['Pebblit', 20]] }
+  },
+
+  emberton: {
+    label: 'Emberton Town',
+    rows: [
+      "####################",
+      "#,,,.............,,#",
+      "#..GGGG....HHHH....#",
+      "#..GGgG....HHhH....#",
+      "#..................#",
+      "#...MMMM...S.......#",
+      "#...MMmM...........#",
+      "#..................#",
+      "#...................",
+      "#..................#",
+      "#,,..............,,#",
+      "#,,,,,,,,,,,,,,,,,,#",
+      "#########.##########",
+      "#########.##########"
+    ],
+    warps: [
+      { x: 9, y: 13, map: 'route1', tx: 9, ty: 1 },
+      { x: 19, y: 8, map: 'route2', tx: 1, ty: 7 }
+    ],
+    signs: { '11,5': 'EMBERTON TOWN\n"Forged in flame."\nEmberton Gym — Leader Cinda, master of Fire.' },
+    gym: {
+      id: 'cinda', leader: 'Leader Cinda', badge: 'Blaze Badge', badgeIcon: '🔥', reward: 1500,
+      team: [['Scorchion', 11], ['Embercub', 13]],
+      intro: 'Welcome to Emberton Gym! My fire burns hotter than any rival\'s!',
+      win: 'Incredible... your bond burns brighter than my flames. Take the Blaze Badge!',
+      after: 'Your flame is the real deal. Route 2 east of town leads to Tidehaven.'
+    },
+    npcs: [
+      {
+        id: 'hiker', sprite: '🧗', name: 'Hiker',
+        pos: () => G.badges.includes('Blaze Badge') ? { x: 17, y: 10 } : { x: 18, y: 8 },
+        lines: () => G.badges.includes('Blaze Badge')
+          ? ['You beat Cinda? Route 2 is open to you. Watch out for wild monsters — they\'re tougher out there!']
+          : ['Halt! Route 2 is too rough for a rookie.', 'Come back when you\'ve earned the BLAZE BADGE from Emberton Gym.']
+      },
+      {
+        id: 'kid', sprite: '👦', pos: () => ({ x: 12, y: 4 }), name: 'Kid',
+        lines: () => ['Leader Cinda uses FIRE monsters.', 'Water and Rock moves are super effective against Fire!']
+      }
+    ],
+    wild: null
+  },
+
+  route2: {
+    label: 'Route 2',
+    rows: [
+      "####################",
+      "#,,,,##....##,,,,,,#",
+      "#TTT.##....##..TTT.#",
+      "#TTT...............#",
+      "#TTT....S..........#",
+      "#..................#",
+      "#..................#",
+      "...................#",
+      "#...................",
+      "#......TTTT........#",
+      "#......TTTT....,,..#",
+      "#,,....TTTT........#",
+      "#,,,,,,,,,,,,,,,,,,#",
+      "####################"
+    ],
+    warps: [
+      { x: 0, y: 7, map: 'emberton', tx: 18, ty: 8 },
+      { x: 19, y: 8, map: 'tidehaven', tx: 1, ty: 7 }
+    ],
+    signs: { '8,4': 'ROUTE 2\nWest: Emberton · East: Tidehaven\nBeware: strong wild monsters!' },
+    npcs: [
+      {
+        id: 'cliff', sprite: '👷', name: 'Hiker Cliff', pos: () => ({ x: 14, y: 8 }),
+        trainer: {
+          id: 'cliff', title: 'Hiker Cliff', reward: 600,
+          team: [['Pebblit', 12], ['Bouldox', 13]],
+          intro: 'These boulders and I have been waiting for a challenger!',
+          win: 'Rock solid battling, kid! You crushed me fair and square.',
+          after: 'Tidehaven\'s leader Marlow uses WATER types. Grass and Electric moves will zap \'em!'
+        }
+      }
+    ],
+    wild: { levels: [9, 13], table: [['Galeon', 25], ['Frostowl', 20], ['Scorchion', 15], ['Snapjaw', 15], ['Spectross', 15], ['Voltikit', 10]] }
+  },
+
+  tidehaven: {
+    label: 'Tidehaven City',
+    rows: [
+      "####################",
+      "#,,..........,,WWWW#",
+      "#..GGGG..HHHH..WWWW#",
+      "#..GGgG..HHhH..WWWW#",
+      "#..............WWWW#",
+      "#...MMMM....,..WWWW#",
+      "#...MMmM.......WWWW#",
+      "............S..WWWW#",
+      "#..............WWWW#",
+      "#....,,,.......WWWW#",
+      "#..............WWWW#",
+      "#,,,,,,,,,,,,,,WWWW#",
+      "####################",
+      "####################"
+    ],
+    warps: [{ x: 0, y: 7, map: 'route2', tx: 18, ty: 8 }],
+    signs: { '12,7': 'TIDEHAVEN CITY\n"Where the land meets the sea."\nTidehaven Gym — Leader Marlow, master of Water.' },
+    gym: {
+      id: 'marlow', leader: 'Leader Marlow', badge: 'Tide Badge', badgeIcon: '🌊', reward: 2500,
+      team: [['Snapjaw', 16], ['Frostowl', 16], ['Aquafin', 18]],
+      intro: 'Ah, a challenger washes ashore! Let\'s see if you can weather my tide!',
+      win: 'Magnificent! You rode the wave all the way to victory. The Tide Badge is yours!',
+      after: 'With both badges, you\'re the strongest trainer in the region. Champion!'
+    },
+    npcs: [
+      {
+        id: 'sailor', sprite: '🧓', pos: () => ({ x: 8, y: 9 }), name: 'Old Sailor',
+        lines: () => ['Marlow\'s water monsters fear GRASS and ELECTRIC moves.', 'The sea\'s beautiful today, isn\'t it?']
+      }
+    ],
+    wild: null
+  }
+};
+
+// Normalize map rows to exactly MAP_W chars
+for (const m of Object.values(MAPS)) {
+  m.rows = m.rows.map(r => (r + '####################').slice(0, MAP_W));
+  while (m.rows.length < MAP_H) m.rows.push('#'.repeat(MAP_W));
+}
+
+const WALKABLE = new Set(['.', ',', 'T']);
+const DOOR_INFO = { l: ['lab', '🔬'], h: ['heal', '❤️'], m: ['shop', '🛒'], g: ['gym', '🏆'] };
+
+/* =====================================================
+   MONSTERS — stats, XP, leveling
+   ===================================================== */
+function statsAt(speciesName, level) {
+  const b = SPECIES[speciesName].base;
   return {
-    species,
-    name: species.name,
-    type: species.type,
-    sprite: species.sprite,
-    atk: species.stats.atk,
-    def: species.stats.def,
-    spd: species.stats.spd,
-    maxHp,
-    hp: maxHp,
-    pp: Object.fromEntries(species.moves.map(m => [m, MOVES[m].pp]))
+    maxHp: Math.floor(b.hp * 2 * level / 100) + level + 10,
+    atk: Math.floor(b.atk * 2 * level / 100) + 5,
+    def: Math.floor(b.def * 2 * level / 100) + 5,
+    spd: Math.floor(b.spd * 2 * level / 100) + 5
   };
+}
+
+function makeMonster(speciesName, level) {
+  const sp = SPECIES[speciesName];
+  const s = statsAt(speciesName, level);
+  return {
+    species: speciesName,
+    name: speciesName,
+    type: sp.type,
+    sprite: sp.sprite,
+    level, xp: 0,
+    ...s,
+    hp: s.maxHp,
+    moves: [...sp.moves],
+    pp: Object.fromEntries(sp.moves.map(mv => [mv, MOVES[mv].pp]))
+  };
+}
+
+const xpNeeded = level => 4 * level * level + 15;
+
+function applyLevelUp(mon) {
+  const old = statsAt(mon.species, mon.level);
+  mon.level++;
+  const now = statsAt(mon.species, mon.level);
+  mon.maxHp = now.maxHp; mon.atk = now.atk; mon.def = now.def; mon.spd = now.spd;
+  mon.hp = Math.min(mon.maxHp, mon.hp + (now.maxHp - old.maxHp));
 }
 
 function effectiveness(moveType, defenderType) {
@@ -518,73 +862,835 @@ function effectiveness(moveType, defenderType) {
   return row[defenderType] !== undefined ? row[defenderType] : 1;
 }
 
-function calcDamage(attacker, defender, move) {
-  const m = MOVES[move];
+function calcDamage(attacker, defender, moveName) {
+  const m = MOVES[moveName];
   const eff = effectiveness(m.type, defender.type);
   if (eff === 0) return { dmg: 0, eff, crit: false };
   const crit = Math.random() < 1 / 16;
   const stab = m.type === attacker.type ? 1.5 : 1;
-  const base = ((2 * LEVEL / 5 + 2) * m.power * attacker.atk / defender.def) / 50 + 2;
-  const rand = 0.85 + Math.random() * 0.15;
-  const dmg = Math.max(1, Math.floor(base * stab * eff * (crit ? 1.5 : 1) * rand));
+  const base = ((2 * attacker.level / 5 + 2) * m.power * attacker.atk / defender.def) / 50 + 2;
+  const dmg = Math.max(1, Math.floor(base * stab * eff * (crit ? 1.5 : 1) * rand(0.85, 1)));
   return { dmg, eff, crit };
 }
 
-/* ================= GAME STATE ================= */
+/* =====================================================
+   GAME STATE & SAVE
+   ===================================================== */
+const SAVE_KEY = 'monster-quest-save-v1';
 
-const state = {
-  playerTeam: [],
-  enemyTeam: [],
-  playerActive: 0,
-  enemyActive: 0,
+const G = {
+  party: [],
+  items: { orb: 0, potion: 0 },
+  money: 0,
+  badges: [],
+  flags: {},          // starter, trainer ids defeated, champion seen
+  map: 'willowbrook',
+  lastHeal: { map: 'willowbrook', x: 9, y: 8 }
+};
+
+const player = { x: 9, y: 8, px: 9 * TILE, py: 8 * TILE, dir: 'down', moving: false, tx: 0, ty: 0, anim: 0 };
+
+function saveGame() {
+  const data = {
+    party: G.party.map(m => ({ species: m.species, level: m.level, xp: m.xp, hp: m.hp, pp: m.pp })),
+    items: G.items, money: G.money, badges: G.badges, flags: G.flags,
+    map: G.map, x: player.x, y: player.y, lastHeal: G.lastHeal
+  };
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(data)); } catch (e) { /* storage unavailable */ }
+}
+
+function loadGame() {
+  let data;
+  try { data = JSON.parse(localStorage.getItem(SAVE_KEY)); } catch (e) { return false; }
+  if (!data || !data.party) return false;
+  G.party = data.party.map(d => {
+    const m = makeMonster(d.species, d.level);
+    m.xp = d.xp; m.hp = clamp(d.hp, 0, m.maxHp);
+    for (const mv of m.moves) if (d.pp && d.pp[mv] !== undefined) m.pp[mv] = d.pp[mv];
+    return m;
+  });
+  G.items = data.items; G.money = data.money; G.badges = data.badges;
+  G.flags = data.flags; G.map = data.map; G.lastHeal = data.lastHeal;
+  player.x = data.x; player.y = data.y;
+  player.px = player.x * TILE; player.py = player.y * TILE;
+  return true;
+}
+
+/* =====================================================
+   HUD
+   ===================================================== */
+function updateHUD() {
+  $('hud-loc').textContent = MAPS[G.map].label;
+  $('hud-money').textContent = '$' + G.money;
+  $('hud-orbs').textContent = G.items.orb;
+  $('hud-potions').textContent = G.items.potion;
+  $('hud-badges').textContent = G.badges.length
+    ? 'Badges: ' + G.badges.map(b => b === 'Blaze Badge' ? '🔥' : '🌊').join(' ')
+    : 'Badges: —';
+}
+
+/* =====================================================
+   OVERWORLD DIALOG
+   ===================================================== */
+const dlg = { open: false, resolve: null, advancing: false };
+
+function owSay(lines) {
+  if (typeof lines === 'string') lines = [lines];
+  return new Promise(async resolve => {
+    dlg.open = true;
+    $('ow-dialog').style.display = 'block';
+    $('ow-choices').innerHTML = '';
+    for (const line of lines) {
+      $('ow-dialog-text').textContent = line;
+      $('ow-arrow').style.display = 'inline';
+      await new Promise(r => { dlg.resolve = r; });
+    }
+    dlg.open = false;
+    dlg.resolve = null;
+    $('ow-dialog').style.display = 'none';
+    resolve();
+  });
+}
+
+function owChoice(prompt, options) {
+  return new Promise(resolve => {
+    dlg.open = true;
+    $('ow-dialog').style.display = 'block';
+    $('ow-dialog-text').textContent = prompt;
+    $('ow-arrow').style.display = 'none';
+    const wrap = $('ow-choices');
+    wrap.innerHTML = '';
+    options.forEach((label, i) => {
+      const b = document.createElement('button');
+      b.textContent = label;
+      b.addEventListener('click', e => {
+        e.stopPropagation();
+        dlg.open = false;
+        $('ow-dialog').style.display = 'none';
+        wrap.innerHTML = '';
+        resolve(i);
+      });
+      wrap.appendChild(b);
+    });
+  });
+}
+
+function advanceDialog() {
+  if (dlg.resolve) { const r = dlg.resolve; dlg.resolve = null; r(); }
+}
+$('ow-dialog').addEventListener('click', advanceDialog);
+
+/* =====================================================
+   OVERWORLD ENGINE
+   ===================================================== */
+const owCanvas = $('ow-canvas');
+const owCtx = owCanvas.getContext('2d');
+const held = new Set();
+
+const uiLocked = () => dlg.open || battle.active || overlayOpen();
+const overlayOpen = () =>
+  ['title-overlay', 'party-overlay', 'champion-overlay'].some(id => $(id).style.display === 'flex');
+
+function tileAt(map, x, y) {
+  if (x < 0 || y < 0 || x >= MAP_W || y >= MAP_H) return '#';
+  return MAPS[map].rows[y][x];
+}
+
+function npcAt(map, x, y) {
+  for (const n of MAPS[map].npcs) {
+    const p = n.pos();
+    if (p.x === x && p.y === y) return n;
+  }
+  return null;
+}
+
+function passable(x, y) {
+  return WALKABLE.has(tileAt(G.map, x, y)) && !npcAt(G.map, x, y);
+}
+
+const DIRS = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
+
+function gameLoop() {
+  if (!uiLocked()) {
+    if (player.moving) {
+      const speed = 4;
+      const gx = player.tx * TILE, gy = player.ty * TILE;
+      player.px += Math.sign(gx - player.px) * Math.min(speed, Math.abs(gx - player.px));
+      player.py += Math.sign(gy - player.py) * Math.min(speed, Math.abs(gy - player.py));
+      player.anim += 0.25;
+      if (player.px === gx && player.py === gy) {
+        player.x = player.tx; player.y = player.ty;
+        player.moving = false;
+        onArrive();
+      }
+    } else {
+      const dir = ['up', 'down', 'left', 'right'].find(d => held.has(d));
+      if (dir) {
+        player.dir = dir;
+        const [dx, dy] = DIRS[dir];
+        const nx = player.x + dx, ny = player.y + dy;
+        if (passable(nx, ny)) { player.tx = nx; player.ty = ny; player.moving = true; }
+      }
+    }
+  }
+  renderWorld();
+  requestAnimationFrame(gameLoop);
+}
+
+async function onArrive() {
+  const m = MAPS[G.map];
+  const warp = m.warps.find(w => w.x === player.x && w.y === player.y);
+  if (warp) {
+    G.map = warp.map;
+    player.x = warp.tx; player.y = warp.ty;
+    player.px = player.x * TILE; player.py = player.y * TILE;
+    updateHUD();
+    saveGame();
+    return;
+  }
+  if (tileAt(G.map, player.x, player.y) === 'T' && m.wild && G.party.length && Math.random() < 0.16) {
+    const pick = weightedPick(m.wild.table);
+    const level = randInt(m.wild.levels[0], m.wild.levels[1]);
+    startBattle({ kind: 'wild', mon: makeMonster(pick, level) });
+  }
+}
+
+function weightedPick(table) {
+  let total = table.reduce((s, [, w]) => s + w, 0);
+  let roll = Math.random() * total;
+  for (const [name, w] of table) { roll -= w; if (roll <= 0) return name; }
+  return table[0][0];
+}
+
+/* ---------- interaction ---------- */
+async function interact() {
+  if (uiLocked() || player.moving) return;
+  const [dx, dy] = DIRS[player.dir];
+  const fx = player.x + dx, fy = player.y + dy;
+  const map = MAPS[G.map];
+
+  const npc = npcAt(G.map, fx, fy);
+  if (npc) return interactNPC(npc);
+
+  const t = tileAt(G.map, fx, fy);
+  if (t === 'S') {
+    const text = map.signs[`${fx},${fy}`];
+    if (text) await owSay(text);
+    return;
+  }
+  if (t === 'h') return useHealCenter();
+  if (t === 'm') return useShop();
+  if (t === 'l') return useLab();
+  if (t === 'g') return useGym(map.gym);
+}
+
+async function interactNPC(npc) {
+  if (npc.trainer) {
+    const tr = npc.trainer;
+    if (G.flags['beat_' + tr.id]) return owSay([tr.after]);
+    if (!G.party.some(m => m.hp > 0)) return owSay(['Your monsters need to be healthy to battle!']);
+    await owSay([`${tr.title}: ${tr.intro}`, `${tr.title} challenges you to a battle!`]);
+    startBattle({ kind: 'trainer', trainer: tr });
+    return;
+  }
+  await owSay(npc.lines().map(l => `${npc.name}: ${l}`));
+}
+
+async function useHealCenter() {
+  await owSay(['Nurse: Welcome! Let me heal your team to full health.']);
+  healParty();
+  G.lastHeal = { map: G.map, x: player.x, y: player.y };
+  saveGame();
+  await owSay(['Nurse: There you go — everyone\'s feeling great! Come back any time. ❤️']);
+}
+
+function healParty() {
+  for (const m of G.party) {
+    m.hp = m.maxHp;
+    for (const mv of m.moves) m.pp[mv] = MOVES[mv].pp;
+  }
+}
+
+async function useShop() {
+  await owSay(['Clerk: Welcome to the Monster Mart!']);
+  while (true) {
+    const i = await owChoice(`What would you like? (You have $${G.money})`,
+      ['Capture Orb — $150', 'Potion — $200', 'Leave']);
+    if (i === 2) break;
+    const cost = i === 0 ? 150 : 200;
+    if (G.money < cost) { await owSay(['Clerk: Sorry, you don\'t have enough money!']); continue; }
+    G.money -= cost;
+    if (i === 0) G.items.orb++; else G.items.potion++;
+    updateHUD();
+    saveGame();
+    await owSay([`Clerk: One ${i === 0 ? 'Capture Orb' : 'Potion'}, coming right up!`]);
+  }
+  await owSay(['Clerk: Come again!']);
+}
+
+async function useLab() {
+  if (G.flags.starter) {
+    return owSay(['Prof. Willow: How\'s your journey going? Remember — weakened monsters are easier to catch!']);
+  }
+  await owSay([
+    'Prof. Willow: Ah, you must be the new trainer!',
+    'Prof. Willow: Every great journey starts with a partner. Choose one of these three monsters!'
+  ]);
+  const labels = STARTERS.map(s => `${SPECIES[s].sprite} ${s} (${SPECIES[s].type})`);
+  const i = await owChoice('Which monster will you choose?', labels);
+  const starter = makeMonster(STARTERS[i], 5);
+  G.party.push(starter);
+  G.flags.starter = true;
+  G.items.orb += 5;
+  G.items.potion += 2;
+  updateHUD();
+  saveGame();
+  await owSay([
+    `You received ${starter.name}! ${starter.sprite}`,
+    'Prof. Willow: I\'ll throw in 5 Capture Orbs and 2 Potions too.',
+    'Prof. Willow: Catch wild monsters in tall grass, beat the two Gym Leaders, and become Champion!'
+  ]);
+}
+
+async function useGym(gym) {
+  if (!gym) return;
+  if (G.badges.includes(gym.badge)) {
+    return owSay([`${gym.leader}: ${gym.after}`]);
+  }
+  if (!G.party.some(m => m.hp > 0)) return owSay(['Your monsters need to be healthy to challenge the gym!']);
+  await owSay([`${gym.leader}: ${gym.intro}`]);
+  const i = await owChoice('Challenge the Gym Leader?', ['Yes — battle!', 'Not yet']);
+  if (i === 1) return owSay([`${gym.leader}: Train hard and come back!`]);
+  startBattle({ kind: 'trainer', trainer: { id: gym.id, title: gym.leader, reward: gym.reward, team: gym.team, win: gym.win, gymBadge: gym.badge } });
+}
+
+/* ---------- whiteout ---------- */
+async function whiteout() {
+  G.money = Math.floor(G.money / 2);
+  await owSay(['You blacked out!', 'You scurried back to safety, dropping half your money on the way...']);
+  G.map = G.lastHeal.map;
+  player.x = G.lastHeal.x; player.y = G.lastHeal.y;
+  player.px = player.x * TILE; player.py = player.y * TILE;
+  player.moving = false;
+  healParty();
+  updateHUD();
+  saveGame();
+}
+
+/* =====================================================
+   OVERWORLD RENDERING
+   ===================================================== */
+function renderWorld() {
+  if ($('overworld').style.display === 'none') return;
+  const map = MAPS[G.map];
+  const ctx = owCtx;
+  const time = performance.now();
+
+  for (let y = 0; y < MAP_H; y++) {
+    for (let x = 0; x < MAP_W; x++) {
+      drawTile(ctx, map.rows[y][x], x, y, time);
+    }
+  }
+
+  // building icons above doors
+  for (let y = 0; y < MAP_H; y++) {
+    for (let x = 0; x < MAP_W; x++) {
+      const t = map.rows[y][x];
+      if (DOOR_INFO[t]) {
+        ctx.font = '20px serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(DOOR_INFO[t][1], x * TILE + TILE / 2, (y - 1) * TILE + 24);
+      }
+    }
+  }
+
+  // NPCs
+  ctx.font = '24px serif';
+  ctx.textAlign = 'center';
+  for (const n of map.npcs) {
+    const p = n.pos();
+    ctx.fillText(n.sprite, p.x * TILE + TILE / 2, p.y * TILE + 25);
+    if (n.trainer && !G.flags['beat_' + n.trainer.id]) {
+      ctx.font = '11px sans-serif';
+      ctx.fillText('❗', p.x * TILE + TILE / 2, p.y * TILE - 2);
+      ctx.font = '24px serif';
+    }
+  }
+
+  // player
+  const bob = player.moving ? Math.sin(player.anim * Math.PI) * 2 : 0;
+  ctx.save();
+  ctx.translate(player.px + TILE / 2, player.py + 25 - bob);
+  if (player.dir === 'left') ctx.scale(-1, 1);
+  ctx.font = '26px serif';
+  ctx.fillText('🧑', 0, 0);
+  ctx.restore();
+
+  // facing indicator
+  const [fdx, fdy] = DIRS[player.dir];
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.beginPath();
+  const cx = player.px + TILE / 2 + fdx * 13, cy = player.py + TILE / 2 + fdy * 13 + 4;
+  ctx.arc(cx, cy, 2.5, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawTile(ctx, t, x, y, time) {
+  const px = x * TILE, py = y * TILE;
+  // base
+  ctx.fillStyle = '#90c868';
+  ctx.fillRect(px, py, TILE, TILE);
+
+  switch (t) {
+    case '.':
+      ctx.fillStyle = '#e0cf96';
+      ctx.fillRect(px, py, TILE, TILE);
+      ctx.fillStyle = 'rgba(0,0,0,0.04)';
+      if ((x + y) % 2) ctx.fillRect(px, py, TILE, TILE);
+      break;
+    case ',': {
+      const v = (x * 7 + y * 13) % 4;
+      ctx.font = '13px serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(['🌼', '🌸', '🌷', '🍀'][v], px + TILE / 2, py + 21);
+      break;
+    }
+    case 'T':
+      ctx.fillStyle = '#58a048';
+      ctx.fillRect(px, py, TILE, TILE);
+      ctx.font = '22px serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('🌿', px + TILE / 2, py + 25);
+      break;
+    case '#':
+      ctx.fillStyle = '#78b058';
+      ctx.fillRect(px, py, TILE, TILE);
+      ctx.font = '26px serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('🌲', px + TILE / 2, py + 26);
+      break;
+    case 'W': {
+      const phase = Math.sin(time / 600 + x * 1.3 + y * 0.9);
+      ctx.fillStyle = phase > 0 ? '#5090e0' : '#4884d4';
+      ctx.fillRect(px, py, TILE, TILE);
+      ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(px + 5, py + 16 + phase * 3);
+      ctx.quadraticCurveTo(px + 16, py + 11 + phase * 3, px + 27, py + 16 + phase * 3);
+      ctx.stroke();
+      break;
+    }
+    case 'S':
+      ctx.fillStyle = '#e0cf96';
+      ctx.fillRect(px, py, TILE, TILE);
+      ctx.fillStyle = '#8a6840';
+      ctx.fillRect(px + 14, py + 14, 4, 14);
+      ctx.fillStyle = '#b08850';
+      ctx.fillRect(px + 5, py + 5, 22, 12);
+      ctx.strokeStyle = '#684c28';
+      ctx.strokeRect(px + 5, py + 5, 22, 12);
+      break;
+    default: {
+      // building walls & doors
+      const colors = { L: '#9080b8', H: '#e87878', M: '#6898e0', G: '#e8a040' };
+      const wall = t.toUpperCase();
+      if (colors[wall]) {
+        ctx.fillStyle = colors[wall];
+        ctx.fillRect(px, py, TILE, TILE);
+        ctx.fillStyle = 'rgba(255,255,255,0.18)';
+        ctx.fillRect(px, py, TILE, 6);
+        ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+        ctx.strokeRect(px + 0.5, py + 0.5, TILE - 1, TILE - 1);
+        if (DOOR_INFO[t]) {
+          ctx.fillStyle = '#483828';
+          ctx.fillRect(px + 7, py + 8, 18, 24);
+          ctx.fillStyle = '#d8c890';
+          ctx.fillRect(px + 19, py + 19, 3, 3);
+        }
+      }
+    }
+  }
+}
+
+/* =====================================================
+   FX ENGINE — battle attack animations
+   ===================================================== */
+const fxCanvas = $('fx-canvas');
+const fxCtx = fxCanvas.getContext('2d');
+const fx = { parts: [], bolts: [], ball: null, raf: null, last: 0 };
+
+function fxResize() {
+  const arena = $('arena');
+  fxCanvas.width = arena.clientWidth;
+  fxCanvas.height = arena.clientHeight;
+}
+window.addEventListener('resize', fxResize);
+
+function spriteCenter(side) {
+  const arena = $('arena').getBoundingClientRect();
+  const r = $(`${side}-sprite`).getBoundingClientRect();
+  return { x: r.left + r.width / 2 - arena.left, y: r.top + r.height / 2 - arena.top };
+}
+
+function fxEnsure() {
+  if (!fx.raf) { fx.last = performance.now(); fx.raf = requestAnimationFrame(fxTick); }
+}
+
+function fxTick(t) {
+  const dt = Math.min(40, t - fx.last) / 16.67;
+  fx.last = t;
+  const ctx = fxCtx;
+  ctx.clearRect(0, 0, fxCanvas.width, fxCanvas.height);
+
+  // particles
+  fx.parts = fx.parts.filter(p => {
+    p.life -= dt;
+    if (p.life <= 0) return false;
+    if (p.target) {
+      const dx = p.target.x - p.x, dy = p.target.y - p.y;
+      const d = Math.hypot(dx, dy);
+      if (d < p.speed * dt + 2) {
+        if (p.onHit) p.onHit(p);
+        return false;
+      }
+      p.vx = dx / d * p.speed;
+      p.vy = dy / d * p.speed;
+      if (p.wobble) {
+        p.phase += 0.3 * dt;
+        p.vx += Math.cos(p.phase) * p.wobble;
+        p.vy += Math.sin(p.phase) * p.wobble;
+      }
+    }
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    if (p.g) p.vy += p.g * dt;
+    p.rot = (p.rot || 0) + (p.vrot || 0) * dt;
+    drawParticle(ctx, p);
+    return true;
+  });
+
+  // lightning bolts
+  fx.bolts = fx.bolts.filter(b => {
+    b.life -= dt * 16.67;
+    if (b.life <= 0) return false;
+    drawBolt(ctx, b);
+    return true;
+  });
+
+  // capture ball
+  if (fx.ball) drawBall(ctx, fx.ball);
+
+  if (fx.parts.length || fx.bolts.length || fx.ball) {
+    fx.raf = requestAnimationFrame(fxTick);
+  } else {
+    fx.raf = null;
+    ctx.clearRect(0, 0, fxCanvas.width, fxCanvas.height);
+  }
+}
+
+function drawParticle(ctx, p) {
+  const a = p.fade === false ? 1 : clamp(p.life / p.maxLife, 0, 1);
+  ctx.save();
+  ctx.globalAlpha = a;
+  ctx.translate(p.x, p.y);
+  ctx.rotate(p.rot || 0);
+  ctx.fillStyle = p.color;
+  switch (p.shape) {
+    case 'leaf':
+      ctx.beginPath();
+      ctx.ellipse(0, 0, p.size, p.size * 0.45, 0, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+    case 'shard':
+      ctx.beginPath();
+      ctx.moveTo(0, -p.size);
+      ctx.lineTo(p.size * 0.5, p.size);
+      ctx.lineTo(-p.size * 0.5, p.size);
+      ctx.closePath();
+      ctx.fill();
+      break;
+    case 'rock':
+      ctx.beginPath();
+      ctx.moveTo(-p.size, 0.2 * p.size);
+      ctx.lineTo(-0.4 * p.size, -p.size);
+      ctx.lineTo(0.7 * p.size, -0.7 * p.size);
+      ctx.lineTo(p.size, 0.4 * p.size);
+      ctx.lineTo(0, p.size);
+      ctx.closePath();
+      ctx.fill();
+      break;
+    case 'slash':
+      ctx.strokeStyle = p.color;
+      ctx.lineWidth = 3.5;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.arc(0, 0, p.size, -0.6, 0.6);
+      ctx.stroke();
+      break;
+    case 'spark':
+      ctx.strokeStyle = p.color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(p.vx * 2.5, p.vy * 2.5);
+      ctx.stroke();
+      break;
+    case 'ring':
+      ctx.strokeStyle = p.color;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(0, 0, p.size * (1 + (1 - p.life / p.maxLife) * 2.2), 0, Math.PI * 2);
+      ctx.stroke();
+      break;
+    case 'star': {
+      ctx.strokeStyle = p.color;
+      ctx.lineWidth = 3;
+      ctx.lineCap = 'round';
+      const s = p.size * (1 + (1 - p.life / p.maxLife));
+      for (let i = 0; i < 4; i++) {
+        const ang = i * Math.PI / 4;
+        ctx.beginPath();
+        ctx.moveTo(-Math.cos(ang) * s, -Math.sin(ang) * s);
+        ctx.lineTo(Math.cos(ang) * s, Math.sin(ang) * s);
+        ctx.stroke();
+      }
+      break;
+    }
+    default:
+      ctx.beginPath();
+      ctx.arc(0, 0, p.size, 0, Math.PI * 2);
+      ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawBolt(ctx, b) {
+  ctx.save();
+  ctx.globalAlpha = clamp(b.life / 200, 0, 1);
+  ctx.strokeStyle = '#fff8a0';
+  ctx.lineWidth = 3.5;
+  ctx.shadowColor = '#f8d030';
+  ctx.shadowBlur = 14;
+  ctx.beginPath();
+  let y = 0;
+  let x = b.x + rand(-4, 4);
+  ctx.moveTo(x, y);
+  while (y < b.ty) {
+    y += rand(16, 30);
+    x = b.x + rand(-16, 16);
+    ctx.lineTo(x, Math.min(y, b.ty));
+  }
+  ctx.lineTo(b.x, b.ty);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawBall(ctx, ball) {
+  ctx.save();
+  ctx.translate(ball.x, ball.y);
+  ctx.rotate(ball.rot || 0);
+  ctx.scale(ball.scale || 1, ball.scale || 1);
+  const r = 11;
+  ctx.beginPath(); ctx.arc(0, 0, r, Math.PI, 0); ctx.fillStyle = '#e03028'; ctx.fill();
+  ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI); ctx.fillStyle = '#f8f8f0'; ctx.fill();
+  ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.lineWidth = 2; ctx.strokeStyle = '#282828'; ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-r, 0); ctx.lineTo(r, 0); ctx.stroke();
+  ctx.beginPath(); ctx.arc(0, 0, 3.5, 0, Math.PI * 2); ctx.fillStyle = '#fff'; ctx.fill(); ctx.stroke();
+  ctx.restore();
+}
+
+/* ---------- FX building blocks ---------- */
+function emit(props) {
+  fx.parts.push({ vx: 0, vy: 0, maxLife: props.life, ...props });
+  fxEnsure();
+}
+
+function burst(at, { count = 12, colors, speed = [1.5, 4], size = [2, 5], life = [18, 30], shape = 'circle', g = 0, vrot = 0 }) {
+  for (let i = 0; i < count; i++) {
+    const ang = rand(0, Math.PI * 2);
+    const sp = rand(speed[0], speed[1]);
+    emit({
+      x: at.x, y: at.y,
+      vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp,
+      g, size: rand(size[0], size[1]),
+      color: colors[randInt(0, colors.length - 1)],
+      life: rand(life[0], life[1]),
+      shape, rot: rand(0, 6), vrot: vrot ? rand(-vrot, vrot) : 0
+    });
+  }
+}
+
+async function projectiles(a, b, { count = 12, stagger = 30, speed = 7, colors, size = [3, 6], shape = 'circle', spread = 16, wobble = 0, impact }) {
+  const dist = Math.hypot(b.x - a.x, b.y - a.y);
+  for (let i = 0; i < count; i++) {
+    setTimeout(() => {
+      emit({
+        x: a.x + rand(-8, 8), y: a.y + rand(-8, 8),
+        target: { x: b.x + rand(-spread, spread), y: b.y + rand(-spread, spread) },
+        speed: speed * rand(0.85, 1.15),
+        size: rand(size[0], size[1]),
+        color: colors[randInt(0, colors.length - 1)],
+        life: 200, fade: false,
+        shape, wobble, phase: rand(0, 6),
+        rot: rand(0, 6), vrot: shape === 'leaf' ? rand(-0.4, 0.4) : 0,
+        onHit: p => { if (impact) impact(p); }
+      });
+    }, i * stagger);
+  }
+  await sleep(count * stagger + (dist / speed) * 16.7 + 80);
+}
+
+function screenFlash(color, ms = 280) {
+  const el = $('fx-flash');
+  el.style.background = color;
+  el.style.transition = 'none';
+  el.style.opacity = 0.55;
+  requestAnimationFrame(() => {
+    el.style.transition = `opacity ${ms}ms ease`;
+    el.style.opacity = 0;
+  });
+}
+
+function arenaQuake() {
+  const a = $('arena');
+  a.classList.remove('quake');
+  void a.offsetWidth;
+  a.classList.add('quake');
+}
+
+/* ---------- per-type attack animations ---------- */
+async function animateAttack(moveType, side, power) {
+  fxResize();
+  const a = spriteCenter(side);
+  const b = spriteCenter(side === 'player' ? 'enemy' : 'player');
+  const heavy = power >= 85;
+  const n = heavy ? 1.4 : 1;
+
+  switch (moveType) {
+    case 'Fire': {
+      const colors = ['#f8a030', '#f06028', '#f8d048', '#e83820'];
+      await projectiles(a, b, {
+        count: Math.round(14 * n), speed: 8, colors, shape: 'circle', size: [3, 7],
+        impact: p => burst(p, { count: 3, colors, speed: [0.5, 2], life: [8, 16] })
+      });
+      burst(b, { count: 18, colors, speed: [1, 4], life: [16, 30] });
+      burst(b, { count: 8, colors: ['#f8c038'], speed: [0.3, 1], life: [25, 40], g: -0.08 });
+      emit({ x: b.x, y: b.y, size: 12, color: '#f06028', life: 20, shape: 'ring' });
+      if (heavy) screenFlash('#f8a030');
+      break;
+    }
+    case 'Water': {
+      const colors = ['#6890f0', '#88b8f8', '#b8e0f8'];
+      await projectiles(a, b, {
+        count: Math.round(16 * n), speed: 8.5, colors, size: [2.5, 5],
+        impact: p => burst(p, { count: 3, colors, speed: [1, 2.5], g: 0.18, life: [10, 18] })
+      });
+      burst(b, { count: 20, colors, speed: [1.5, 4.5], g: 0.22, life: [18, 32] });
+      emit({ x: b.x, y: b.y, size: 12, color: '#88b8f8', life: 22, shape: 'ring' });
+      if (heavy) screenFlash('#6890f0');
+      break;
+    }
+    case 'Grass': {
+      const colors = ['#78c850', '#509838', '#a8e080'];
+      await projectiles(a, b, {
+        count: Math.round(10 * n), speed: 6, stagger: 45, colors, shape: 'leaf', size: [5, 8],
+        impact: p => burst(p, { count: 2, colors, shape: 'leaf', size: [3, 6], speed: [1, 2], life: [10, 18], vrot: 0.4 })
+      });
+      burst(b, { count: 14, colors, shape: 'leaf', size: [4, 7], speed: [1.5, 3.5], life: [18, 30], vrot: 0.4 });
+      break;
+    }
+    case 'Electric': {
+      for (let i = 0; i < (heavy ? 3 : 2); i++) {
+        fx.bolts.push({ x: b.x, ty: b.y, life: 220 });
+        fxEnsure();
+        screenFlash('#f8e870', 200);
+        burst(b, { count: 10, colors: ['#f8d030', '#fff8a0'], shape: 'spark', speed: [2, 6], life: [8, 16] });
+        await sleep(240);
+      }
+      burst(b, { count: 12, colors: ['#f8d030', '#fff'], shape: 'spark', speed: [2, 5], life: [10, 20] });
+      break;
+    }
+    case 'Rock': {
+      const colors = ['#b8a038', '#988030', '#786028'];
+      const count = heavy ? 4 : 3;
+      for (let i = 0; i < count; i++) {
+        const T = 30;
+        const dx = (b.x + rand(-12, 12) - a.x) / T;
+        const g = 0.5;
+        const dyTotal = b.y - a.y - 40;
+        emit({
+          x: a.x, y: a.y - 10,
+          vx: dx, vy: dyTotal / T - 0.5 * g * T,
+          g, shape: 'rock',
+          size: rand(6, 10), color: colors[randInt(0, 2)],
+          life: T + 2, fade: false, vrot: rand(-0.2, 0.2)
+        });
+        setTimeout(() => {
+          burst(b, { count: 8, colors: ['#c8b888', '#a89868'], speed: [1, 3], g: 0.1, life: [12, 22] });
+          arenaQuake();
+        }, T * 16.7);
+        await sleep(220);
+      }
+      await sleep(450);
+      break;
+    }
+    case 'Ice': {
+      const colors = ['#98d8d8', '#c8f0f0', '#68b8d8'];
+      await projectiles(a, b, {
+        count: Math.round(12 * n), speed: 9, colors, shape: 'shard', size: [4, 7],
+        impact: p => burst(p, { count: 3, colors, shape: 'shard', size: [2, 4], speed: [1, 2.5], life: [10, 16] })
+      });
+      burst(b, { count: 16, colors, shape: 'shard', size: [3, 6], speed: [1.5, 4], life: [16, 28], vrot: 0.3 });
+      burst(b, { count: 10, colors: ['#fff'], size: [1.5, 3], speed: [0.4, 1.4], life: [25, 40], g: 0.04 });
+      if (heavy) screenFlash('#c8f0f0');
+      break;
+    }
+    case 'Flying': {
+      const colors = ['#e8e8f8', '#c8c8e8', '#fff'];
+      await projectiles(a, b, {
+        count: heavy ? 5 : 3, stagger: 110, speed: 10, colors, shape: 'slash', size: [10, 16],
+        impact: p => burst(p, { count: 5, colors, speed: [2, 4], life: [10, 18] })
+      });
+      burst(b, { count: 14, colors, speed: [2, 5], life: [14, 26], shape: 'slash', size: [5, 9], vrot: 0.5 });
+      break;
+    }
+    case 'Ghost': {
+      const colors = ['#705898', '#9878c8', '#503870'];
+      await projectiles(a, b, {
+        count: Math.round(8 * n), stagger: 60, speed: 5, colors, size: [5, 8], wobble: 1.6,
+        impact: p => burst(p, { count: 3, colors, speed: [0.5, 1.5], life: [12, 20] })
+      });
+      for (let i = 0; i < 3; i++) {
+        emit({ x: b.x, y: b.y, size: 8 + i * 5, color: '#9878c8', life: 24, shape: 'ring' });
+        await sleep(110);
+      }
+      screenFlash('#503870', 350);
+      break;
+    }
+    default: { // Normal
+      await sleep(200);
+      emit({ x: b.x, y: b.y, size: 8, color: '#fff', life: 16, shape: 'star' });
+      emit({ x: b.x, y: b.y, size: 6, color: '#f8d878', life: 20, shape: 'star', rot: 0.4 });
+      burst(b, { count: 8, colors: ['#fff', '#e8e0c8'], speed: [1.5, 3.5], life: [10, 18] });
+      await sleep(200);
+    }
+  }
+}
+
+/* =====================================================
+   BATTLE SYSTEM
+   ===================================================== */
+const battle = {
+  active: false, kind: 'wild',
+  enemyTeam: [], enemyIdx: 0,
+  pIdx: 0,
+  trainer: null,
   busy: false
 };
 
-const playerMon = () => state.playerTeam[state.playerActive];
-const enemyMon = () => state.enemyTeam[state.enemyActive];
-
-/* ================= TEAM SELECT ================= */
-
-const rosterEl = document.getElementById('roster');
-const startBtn = document.getElementById('start-btn');
-const picked = new Set();
-
-SPECIES.forEach((sp, i) => {
-  const card = document.createElement('div');
-  card.className = 'roster-card';
-  card.innerHTML = `
-    <div class="sprite">${sp.sprite}</div>
-    <div class="name">${sp.name}</div>
-    <span class="type-badge" style="background:${TYPE_COLORS[sp.type]}">${sp.type}</span>
-    <div class="stats">HP ${sp.stats.hp} · ATK ${sp.stats.atk}<br>DEF ${sp.stats.def} · SPD ${sp.stats.spd}</div>
-  `;
-  card.addEventListener('click', () => {
-    if (picked.has(i)) {
-      picked.delete(i);
-      card.classList.remove('selected');
-    } else if (picked.size < 3) {
-      picked.add(i);
-      card.classList.add('selected');
-    }
-    startBtn.disabled = picked.size !== 3;
-    startBtn.textContent = picked.size === 3 ? 'START BATTLE!' : `PICK ${3 - picked.size} MORE`;
-  });
-  rosterEl.appendChild(card);
-});
-
-startBtn.addEventListener('click', () => {
-  state.playerTeam = [...picked].map(i => makeMonster(SPECIES[i]));
-  // Rival picks 3 random distinct species
-  const pool = SPECIES.map((_, i) => i).sort(() => Math.random() - 0.5).slice(0, 3);
-  state.enemyTeam = pool.map(i => makeMonster(SPECIES[i]));
-  document.getElementById('select-screen').style.display = 'none';
-  document.getElementById('battle-screen').style.display = 'block';
-  beginBattle();
-});
-
-/* ================= UI HELPERS ================= */
-
-const $ = id => document.getElementById(id);
+const playerMon = () => G.party[battle.pIdx];
+const enemyMon = () => battle.enemyTeam[battle.enemyIdx];
 
 function hpColor(ratio) {
   if (ratio > 0.5) return 'var(--hp-green)';
@@ -592,14 +1698,25 @@ function hpColor(ratio) {
   return 'var(--hp-red)';
 }
 
-function renderSide(side, mon) {
-  $(`${side}-name`).textContent = mon.name + ' ' + mon.sprite;
-  $(`${side}-sprite`).textContent = mon.sprite;
-  $(`${side}-sprite`).classList.remove('fainted');
+function renderSide(side) {
+  const mon = side === 'player' ? playerMon() : enemyMon();
+  $(`${side}-name`).textContent = mon.sprite + ' ' + mon.name;
+  $(`${side}-level`).textContent = 'Lv' + mon.level;
+  const sp = $(`${side}-sprite`);
+  sp.textContent = mon.sprite;
+  sp.classList.remove('fainted');
+  sp.style.transition = '';
+  sp.style.transform = '';
+  sp.style.opacity = '';
   updateHp(side);
-  const dots = $(`${side}-dots`);
-  const team = side === 'player' ? state.playerTeam : state.enemyTeam;
-  dots.innerHTML = team.map(m => `<span class="dot ${m.hp <= 0 ? 'empty' : ''}"></span>`).join('');
+  renderDots(side);
+}
+
+function renderDots(side) {
+  const el = $(`${side}-dots`);
+  if (side === 'enemy' && battle.kind === 'wild') { el.innerHTML = ''; return; }
+  const team = side === 'player' ? G.party : battle.enemyTeam;
+  el.innerHTML = team.map(m => `<span class="dot ${m.hp <= 0 ? 'empty' : ''}"></span>`).join('');
 }
 
 function updateHp(side) {
@@ -608,14 +1725,9 @@ function updateHp(side) {
   const bar = $(`${side}-hp-bar`);
   bar.style.width = (ratio * 100) + '%';
   bar.style.backgroundColor = hpColor(ratio);
-  if (side === 'player') {
-    $('player-hp-text').textContent = `${Math.max(0, mon.hp)} / ${mon.maxHp}`;
-  }
+  if (side === 'player') $('player-hp-text').textContent = `${Math.max(0, mon.hp)} / ${mon.maxHp}`;
 }
 
-const sleep = ms => new Promise(r => setTimeout(r, ms));
-
-// Show a message and wait for a click (or 2.2s, whichever first)
 function say(text) {
   return new Promise(resolve => {
     $('menu-box').style.display = 'none';
@@ -627,11 +1739,13 @@ function say(text) {
       if (done) return;
       done = true;
       $('message-box').removeEventListener('click', finish);
+      window.removeEventListener('battle-advance', finish);
       clearTimeout(timer);
       resolve();
     };
-    const timer = setTimeout(finish, 2200);
+    const timer = setTimeout(finish, 2000);
     $('message-box').addEventListener('click', finish);
+    window.addEventListener('battle-advance', finish);
   });
 }
 
@@ -642,141 +1756,197 @@ function effectivenessText(eff) {
   return null;
 }
 
-/* ================= MENUS ================= */
+/* ---------- battle start / end ---------- */
+async function startBattle(opts) {
+  battle.active = true;
+  battle.kind = opts.kind;
+  battle.trainer = opts.trainer || null;
+  battle.enemyTeam = opts.kind === 'wild'
+    ? [opts.mon]
+    : opts.trainer.team.map(([sp, lv]) => makeMonster(sp, lv));
+  battle.enemyIdx = 0;
+  battle.pIdx = Math.max(0, G.party.findIndex(m => m.hp > 0));
+  battle.busy = true;
+  held.clear();
 
-function showMainMenu() {
-  state.busy = false;
-  $('message-box').style.display = 'none';
-  const menu = $('menu-box');
-  menu.style.display = 'flex';
-  $('menu-prompt').textContent = `What will ${playerMon().name} do?`;
-  const grid = $('menu-grid');
-  grid.innerHTML = '';
+  const flash = $('battle-flash');
+  flash.classList.add('flashing');
+  await sleep(550);
+  flash.classList.remove('flashing');
 
-  const fight = document.createElement('button');
-  fight.className = 'menu-btn';
-  fight.innerHTML = '⚔ FIGHT';
-  fight.addEventListener('click', showMoveMenu);
-  grid.appendChild(fight);
+  $('overworld').style.display = 'none';
+  $('battle-screen').style.display = 'block';
+  fxResize();
+  renderSide('player');
+  renderSide('enemy');
 
-  const sw = document.createElement('button');
-  sw.className = 'menu-btn';
-  sw.innerHTML = '🔄 SWITCH';
-  sw.disabled = !state.playerTeam.some((m, i) => m.hp > 0 && i !== state.playerActive);
-  sw.addEventListener('click', () => showSwitchMenu(false));
-  grid.appendChild(sw);
-}
-
-function showMoveMenu() {
-  const grid = $('menu-grid');
-  $('menu-prompt').textContent = 'Choose a move:';
-  grid.innerHTML = '';
-  const mon = playerMon();
-
-  mon.species.moves.forEach(name => {
-    const m = MOVES[name];
-    const eff = effectiveness(m.type, enemyMon().type);
-    const effIcon = eff >= 2 ? ' ▲' : (eff === 0 ? ' ✕' : (eff < 1 ? ' ▽' : ''));
-    const btn = document.createElement('button');
-    btn.className = 'menu-btn';
-    btn.style.borderColor = TYPE_COLORS[m.type];
-    btn.innerHTML = `${name}${effIcon}<span class="sub">${m.type} · PWR ${m.power} · PP ${mon.pp[name]}/${m.pp}</span>`;
-    btn.disabled = mon.pp[name] <= 0;
-    btn.addEventListener('click', () => playTurn(name));
-    grid.appendChild(btn);
-  });
-
-  const back = document.createElement('button');
-  back.className = 'menu-btn back-btn';
-  back.textContent = '↩ BACK';
-  back.addEventListener('click', showMainMenu);
-  grid.appendChild(back);
-}
-
-function showSwitchMenu(forced) {
-  $('message-box').style.display = 'none';
-  const menu = $('menu-box');
-  menu.style.display = 'flex';
-  $('menu-prompt').textContent = forced ? 'Choose your next monster!' : 'Switch to:';
-  const grid = $('menu-grid');
-  grid.innerHTML = '';
-
-  state.playerTeam.forEach((m, i) => {
-    if (i === state.playerActive && !forced) return;
-    const btn = document.createElement('button');
-    btn.className = 'menu-btn';
-    btn.innerHTML = `${m.sprite} ${m.name}<span class="sub">${m.type} · HP ${Math.max(0, m.hp)}/${m.maxHp}</span>`;
-    btn.disabled = m.hp <= 0 || i === state.playerActive;
-    btn.addEventListener('click', () => doSwitch(i, forced));
-    grid.appendChild(btn);
-  });
-
-  if (!forced) {
-    const back = document.createElement('button');
-    back.className = 'menu-btn back-btn';
-    back.textContent = '↩ BACK';
-    back.addEventListener('click', showMainMenu);
-    grid.appendChild(back);
+  if (battle.kind === 'wild') {
+    await say(`A wild ${enemyMon().name} appeared! ${enemyMon().sprite}`);
+  } else {
+    await say(`${battle.trainer.title} wants to battle!`);
+    await say(`${battle.trainer.title} sent out ${enemyMon().name}!`);
   }
-}
-
-/* ================= BATTLE FLOW ================= */
-
-async function beginBattle() {
-  renderSide('player', playerMon());
-  renderSide('enemy', enemyMon());
-  await say('Rival Blake wants to battle!');
-  await say(`Rival sent out ${enemyMon().name}!`);
   await say(`Go, ${playerMon().name}!`);
   showMainMenu();
 }
 
+async function endBattle(result) {
+  battle.active = false;
+  battle.busy = false;
+  $('battle-screen').style.display = 'none';
+  $('overworld').style.display = 'block';
+  updateHUD();
+  saveGame();
+
+  if (result === 'loss') {
+    await whiteout();
+    return;
+  }
+  if (result === 'win' && battle.trainer) {
+    const tr = battle.trainer;
+    G.flags['beat_' + tr.id] = true;
+    G.money += tr.reward;
+    const msgs = [`${tr.title}: ${tr.win}`, `You received $${tr.reward} for winning!`];
+    if (tr.gymBadge) {
+      G.badges.push(tr.gymBadge);
+      msgs.push(`You earned the ${tr.gymBadge}! ${tr.gymBadge === 'Blaze Badge' ? '🔥' : '🌊'}`);
+    }
+    updateHUD();
+    saveGame();
+    await owSay(msgs);
+    if (G.badges.length >= 2 && !G.flags.champion) {
+      G.flags.champion = true;
+      saveGame();
+      $('champion-overlay').style.display = 'flex';
+    }
+  }
+}
+
+/* ---------- menus ---------- */
+function showMainMenu() {
+  battle.busy = false;
+  $('message-box').style.display = 'none';
+  $('menu-box').style.display = 'flex';
+  $('menu-prompt').textContent = `What will ${playerMon().name} do?`;
+  const grid = $('menu-grid');
+  grid.innerHTML = '';
+
+  addBtn(grid, '⚔ FIGHT', null, showMoveMenu);
+  addBtn(grid, '🎒 BAG', null, showBagMenu);
+  const canSwitch = G.party.some((m, i) => m.hp > 0 && i !== battle.pIdx);
+  addBtn(grid, '🔄 SWITCH', null, () => showSwitchMenu(false), !canSwitch);
+  if (battle.kind === 'wild') addBtn(grid, '🏃 RUN', null, tryRun);
+}
+
+function addBtn(grid, label, sub, fn, disabled, borderColor) {
+  const btn = document.createElement('button');
+  btn.className = 'menu-btn';
+  btn.innerHTML = label + (sub ? `<span class="sub">${sub}</span>` : '');
+  if (borderColor) btn.style.borderColor = borderColor;
+  btn.disabled = !!disabled;
+  btn.addEventListener('click', fn);
+  grid.appendChild(btn);
+  return btn;
+}
+
+function showMoveMenu() {
+  $('menu-prompt').textContent = 'Choose a move:';
+  const grid = $('menu-grid');
+  grid.innerHTML = '';
+  const mon = playerMon();
+
+  mon.moves.forEach(name => {
+    const m = MOVES[name];
+    const eff = effectiveness(m.type, enemyMon().type);
+    const effIcon = eff >= 2 ? ' ▲' : (eff === 0 ? ' ✕' : (eff < 1 ? ' ▽' : ''));
+    addBtn(grid, name + effIcon,
+      `${m.type} · PWR ${m.power} · PP ${mon.pp[name]}/${m.pp}`,
+      () => playTurn(name), mon.pp[name] <= 0, TYPE_COLORS[m.type]);
+  });
+  addBtn(grid, '↩ BACK', null, showMainMenu).classList.add('back-btn');
+}
+
+function showBagMenu() {
+  $('menu-prompt').textContent = 'Items:';
+  const grid = $('menu-grid');
+  grid.innerHTML = '';
+  addBtn(grid, `⚪ Capture Orb ×${G.items.orb}`,
+    battle.kind === 'wild' ? 'Throw to catch the wild monster' : 'Can\'t use in trainer battles',
+    tryCatch, G.items.orb <= 0 || battle.kind !== 'wild');
+  addBtn(grid, `🧪 Potion ×${G.items.potion}`, 'Restores 50% HP',
+    usePotion, G.items.potion <= 0 || playerMon().hp >= playerMon().maxHp);
+  addBtn(grid, '↩ BACK', null, showMainMenu).classList.add('back-btn');
+}
+
+function showSwitchMenu(forced) {
+  $('message-box').style.display = 'none';
+  $('menu-box').style.display = 'flex';
+  $('menu-prompt').textContent = forced ? 'Choose your next monster!' : 'Switch to:';
+  const grid = $('menu-grid');
+  grid.innerHTML = '';
+
+  G.party.forEach((m, i) => {
+    if (i === battle.pIdx && !forced) return;
+    addBtn(grid, `${m.sprite} ${m.name}`,
+      `Lv${m.level} · ${m.type} · HP ${Math.max(0, m.hp)}/${m.maxHp}`,
+      () => doSwitch(i, forced), m.hp <= 0 || i === battle.pIdx);
+  });
+  if (!forced) addBtn(grid, '↩ BACK', null, showMainMenu).classList.add('back-btn');
+}
+
+/* ---------- core turn logic ---------- */
 function enemyChooseMove() {
-  // AI: weight moves by expected damage, mostly picks the best one
   const mon = enemyMon();
   const target = playerMon();
-  const options = mon.species.moves
+  const options = mon.moves
     .filter(name => mon.pp[name] > 0)
     .map(name => {
       const m = MOVES[name];
-      const score = m.power
-        * effectiveness(m.type, target.type)
-        * (m.type === mon.type ? 1.5 : 1)
-        * (m.acc / 100);
-      return { name, score };
+      return {
+        name,
+        score: m.power * effectiveness(m.type, target.type)
+          * (m.type === mon.type ? 1.5 : 1) * (m.acc / 100)
+      };
     })
     .sort((a, b) => b.score - a.score);
-  if (options.length === 0) return null;
-  return (Math.random() < 0.8 ? options[0] : options[Math.floor(Math.random() * options.length)]).name;
+  if (!options.length) return 'Flail';
+  const smart = battle.trainer ? 0.85 : 0.7;
+  return (Math.random() < smart ? options[0] : options[randInt(0, options.length - 1)]).name;
 }
 
 async function executeMove(side, move) {
   const attacker = side === 'player' ? playerMon() : enemyMon();
   const defender = side === 'player' ? enemyMon() : playerMon();
   const defSide = side === 'player' ? 'enemy' : 'player';
+  const m = MOVES[move];
 
-  attacker.pp[move]--;
-  await say(`${side === 'player' ? '' : 'Enemy '}${attacker.name} used ${move}!`);
+  if (m.pp !== Infinity) attacker.pp[move]--;
+  const prefix = side === 'enemy' ? (battle.kind === 'wild' ? 'Wild ' : 'Enemy ') : '';
+  await say(`${prefix}${attacker.name} used ${move}!`);
 
   const atkSprite = $(`${side}-sprite`);
   atkSprite.classList.add('attacking');
   setTimeout(() => atkSprite.classList.remove('attacking'), 450);
-  await sleep(250);
 
-  if (Math.random() * 100 > MOVES[move].acc) {
+  if (Math.random() * 100 > m.acc) {
+    await sleep(350);
     await say(`${attacker.name}'s attack missed!`);
     return false;
   }
+
+  await animateAttack(m.type, side, m.power);
 
   const { dmg, eff, crit } = calcDamage(attacker, defender, move);
   if (eff !== 0) {
     const defSprite = $(`${defSide}-sprite`);
     defSprite.classList.add('hit');
-    setTimeout(() => defSprite.classList.remove('hit'), 500);
+    defSprite.classList.add('flash');
+    setTimeout(() => { defSprite.classList.remove('hit'); defSprite.classList.remove('flash'); }, 500);
+    if (crit || eff >= 2) arenaQuake();
   }
   defender.hp -= dmg;
   updateHp(defSide);
-  await sleep(450);
+  await sleep(420);
 
   if (crit && eff !== 0) await say('A critical hit!');
   const effMsg = effectivenessText(eff);
@@ -785,102 +1955,317 @@ async function executeMove(side, move) {
   if (defender.hp <= 0) {
     defender.hp = 0;
     $(`${defSide}-sprite`).classList.add('fainted');
-    renderSideDots(defSide);
-    await say(`${defSide === 'enemy' ? 'Enemy ' : ''}${defender.name} fainted!`);
-    return true; // defender fainted
+    renderDots(defSide);
+    const defPrefix = defSide === 'enemy' ? (battle.kind === 'wild' ? 'Wild ' : 'Enemy ') : '';
+    await say(`${defPrefix}${defender.name} fainted!`);
+    return true;
   }
   return false;
 }
 
-function renderSideDots(side) {
-  const team = side === 'player' ? state.playerTeam : state.enemyTeam;
-  $(`${side}-dots`).innerHTML = team.map(m => `<span class="dot ${m.hp <= 0 ? 'empty' : ''}"></span>`).join('');
-}
-
 async function playTurn(playerMove) {
-  if (state.busy) return;
-  state.busy = true;
+  if (battle.busy) return;
+  battle.busy = true;
   $('menu-box').style.display = 'none';
 
   const enemyMove = enemyChooseMove();
-  const playerFirst = playerMon().spd === enemyMon().spd
-    ? Math.random() < 0.5
-    : playerMon().spd > enemyMon().spd;
-
+  const pm = playerMon(), em = enemyMon();
+  const playerFirst = pm.spd === em.spd ? Math.random() < 0.5 : pm.spd > em.spd;
   const order = playerFirst
     ? [['player', playerMove], ['enemy', enemyMove]]
     : [['enemy', enemyMove], ['player', playerMove]];
 
   for (const [side, move] of order) {
-    if (!move) {
-      await say(`${side === 'player' ? playerMon().name : 'Enemy ' + enemyMon().name} has no moves left and flails about!`);
-      continue;
-    }
-    // Skip if this combatant already fainted earlier in the turn
     const actor = side === 'player' ? playerMon() : enemyMon();
     if (actor.hp <= 0) continue;
-
     const fainted = await executeMove(side, move);
     if (fainted) {
-      if (await handleFaint(side === 'player' ? 'enemy' : 'player')) return; // battle over or waiting on switch
-      break; // turn ends when someone faints
+      if (await handleFaint(side === 'player' ? 'enemy' : 'player')) return;
+      break;
     }
   }
   showMainMenu();
 }
 
-// Returns true if the turn flow should stop here (battle ended or player is choosing a switch)
+// Returns true if the flow should stop (battle over or waiting on forced switch)
 async function handleFaint(faintedSide) {
   if (faintedSide === 'enemy') {
-    const next = state.enemyTeam.findIndex(m => m.hp > 0);
+    await awardXp(enemyMon());
+    const next = battle.enemyTeam.findIndex(m => m.hp > 0);
     if (next === -1) {
-      endBattle(true);
+      if (battle.kind === 'wild') await say('You won the battle!');
+      await endBattle('win');
       return true;
     }
-    state.enemyActive = next;
-    await say(`Rival sent out ${enemyMon().name}!`);
-    renderSide('enemy', enemyMon());
+    battle.enemyIdx = next;
+    await say(`${battle.trainer.title} sent out ${enemyMon().name}!`);
+    renderSide('enemy');
     return false;
-  } else {
-    if (!state.playerTeam.some(m => m.hp > 0)) {
-      endBattle(false);
-      return true;
-    }
-    showSwitchMenu(true);
-    return true; // wait for player's forced switch choice
+  }
+  if (!G.party.some(m => m.hp > 0)) {
+    await say('You have no monsters left!');
+    await endBattle('loss');
+    return true;
+  }
+  showSwitchMenu(true);
+  return true;
+}
+
+async function awardXp(foe) {
+  const mon = playerMon();
+  if (mon.hp <= 0) return;
+  const gain = Math.floor(foe.level * (battle.trainer ? 22 : 14));
+  mon.xp += gain;
+  await say(`${mon.name} gained ${gain} XP!`);
+  while (mon.xp >= xpNeeded(mon.level)) {
+    mon.xp -= xpNeeded(mon.level);
+    applyLevelUp(mon);
+    renderSide('player');
+    fxResize();
+    burst(spriteCenter('player'), { count: 16, colors: ['#f8d030', '#fff', '#f8a030'], speed: [1, 3.5], life: [20, 35] });
+    await say(`${mon.name} grew to level ${mon.level}!`);
   }
 }
 
 async function doSwitch(index, forced) {
   $('menu-box').style.display = 'none';
-  state.busy = true;
+  battle.busy = true;
 
   if (!forced) {
     await say(`${playerMon().name}, come back!`);
-    state.playerActive = index;
-    renderSide('player', playerMon());
+    battle.pIdx = index;
+    renderSide('player');
     await say(`Go, ${playerMon().name}!`);
-    // Switching costs your turn: the enemy attacks
-    const enemyMove = enemyChooseMove();
-    if (enemyMove) {
-      const fainted = await executeMove('enemy', enemyMove);
-      if (fainted && await handleFaint('player')) return;
-    }
+    if (await enemyAttacks()) return;
   } else {
-    state.playerActive = index;
-    renderSide('player', playerMon());
+    battle.pIdx = index;
+    renderSide('player');
     await say(`Go, ${playerMon().name}!`);
   }
   showMainMenu();
 }
 
-function endBattle(won) {
-  $('result-title').textContent = won ? '🏆 YOU WIN!' : '💀 YOU LOSE...';
-  $('result-sub').textContent = won
-    ? 'Rival Blake was defeated. Your team is victorious!'
-    : 'All your monsters fainted. Better luck next time!';
-  $('result-overlay').style.display = 'flex';
+// Enemy takes a free attack (after switch / item / failed run). True = stop flow.
+async function enemyAttacks() {
+  if (enemyMon().hp <= 0) return false;
+  const fainted = await executeMove('enemy', enemyChooseMove());
+  if (fainted) return await handleFaint('player');
+  return false;
 }
+
+async function usePotion() {
+  if (battle.busy) return;
+  battle.busy = true;
+  $('menu-box').style.display = 'none';
+  G.items.potion--;
+  const mon = playerMon();
+  const heal = Math.min(Math.floor(mon.maxHp / 2), mon.maxHp - mon.hp);
+  mon.hp += heal;
+  updateHp('player');
+  updateHUD();
+  await say(`You used a Potion! ${mon.name} recovered ${heal} HP.`);
+  if (await enemyAttacks()) return;
+  showMainMenu();
+}
+
+async function tryRun() {
+  if (battle.busy) return;
+  battle.busy = true;
+  $('menu-box').style.display = 'none';
+  const chance = clamp(0.5 + (playerMon().spd - enemyMon().spd) / 200, 0.25, 0.95);
+  if (Math.random() < chance) {
+    await say('You got away safely!');
+    await endBattle('ran');
+    return;
+  }
+  await say("Can't escape!");
+  if (await enemyAttacks()) return;
+  showMainMenu();
+}
+
+/* ---------- catching ---------- */
+async function tryCatch() {
+  if (battle.busy) return;
+  if (G.party.length >= 6) {
+    await say('Your party is full! (Max 6 monsters)');
+    showMainMenu();
+    return;
+  }
+  battle.busy = true;
+  $('menu-box').style.display = 'none';
+  G.items.orb--;
+  updateHUD();
+
+  const target = enemyMon();
+  await say(`You threw a Capture Orb at ${target.name}!`);
+
+  fxResize();
+  const a = spriteCenter('player');
+  const b = spriteCenter('enemy');
+  const enemySprite = $('enemy-sprite');
+
+  // throw arc
+  fx.ball = { x: a.x, y: a.y, rot: 0, scale: 1 };
+  fxEnsure();
+  await tweenFrames(550, k => {
+    fx.ball.x = a.x + (b.x - a.x) * k;
+    fx.ball.y = a.y + (b.y - a.y) * k - Math.sin(k * Math.PI) * 90;
+    fx.ball.rot = k * 12;
+  });
+
+  // monster gets pulled in
+  enemySprite.style.transition = 'transform 0.3s ease, opacity 0.3s';
+  enemySprite.style.transform = 'scale(0)';
+  enemySprite.style.opacity = '0';
+  screenFlash('#fff', 250);
+  await sleep(320);
+
+  // ball drops
+  const groundY = b.y + 46;
+  await tweenFrames(260, k => { fx.ball.y = b.y + (groundY - b.y) * k; fx.ball.rot = 0; });
+
+  // shakes
+  const chance = clamp((1 - 0.65 * target.hp / target.maxHp) * SPECIES[target.species].catchRate, 0.06, 0.95);
+  const success = Math.random() < chance;
+  const shakes = success ? 3 : randInt(1, 2);
+
+  for (let i = 0; i < shakes; i++) {
+    await sleep(380);
+    await tweenFrames(420, k => { fx.ball.rot = Math.sin(k * Math.PI * 2) * 0.45; });
+  }
+  await sleep(420);
+
+  if (success) {
+    burst({ x: fx.ball.x, y: fx.ball.y }, { count: 14, colors: ['#f8d030', '#fff'], speed: [1, 3], life: [18, 30] });
+    await sleep(350);
+    fx.ball = null;
+    await say(`Gotcha! ${target.name} was caught! ${target.sprite}`);
+    G.party.push(target);
+    saveGame();
+    await say(`${target.name} joined your team!`);
+    await endBattle('caught');
+    return;
+  }
+
+  // broke free
+  burst({ x: fx.ball.x, y: fx.ball.y }, { count: 10, colors: ['#fff', '#e8e8e8'], speed: [1.5, 3.5], life: [12, 20] });
+  fx.ball = null;
+  enemySprite.style.transform = '';
+  enemySprite.style.opacity = '1';
+  await sleep(300);
+  enemySprite.style.transition = '';
+  await say(`Oh no! ${target.name} broke free!`);
+  if (await enemyAttacks()) return;
+  showMainMenu();
+}
+
+/* =====================================================
+   PARTY PANEL
+   ===================================================== */
+function openParty() {
+  if (battle.active || dlg.open) return;
+  const list = $('party-list');
+  list.innerHTML = '';
+  G.party.forEach((m, i) => {
+    const card = document.createElement('div');
+    card.className = 'party-card' + (i === 0 ? ' lead' : '');
+    const ratio = Math.max(0, m.hp / m.maxHp);
+    card.innerHTML = `
+      <span class="psprite">${m.sprite}</span>
+      <div class="pinfo">
+        <b>${m.name}</b> Lv${m.level} ${i === 0 ? '★ lead' : ''}
+        <span class="type-badge" style="background:${TYPE_COLORS[m.type]}">${m.type}</span><br>
+        HP ${Math.max(0, m.hp)}/${m.maxHp} · XP ${m.xp}/${xpNeeded(m.level)}
+        <div class="mini-hp"><div style="width:${ratio * 100}%; background:${hpColor(ratio)}"></div></div>
+      </div>`;
+    card.addEventListener('click', () => {
+      if (i === 0) return;
+      [G.party[0], G.party[i]] = [G.party[i], G.party[0]];
+      saveGame();
+      openParty();
+    });
+    list.appendChild(card);
+  });
+  if (!G.party.length) list.innerHTML = '<p>No monsters yet — visit Prof. Willow\'s lab!</p>';
+  $('party-overlay').style.display = 'flex';
+}
+
+$('team-btn').addEventListener('click', openParty);
+$('party-close').addEventListener('click', () => { $('party-overlay').style.display = 'none'; });
+
+/* =====================================================
+   INPUT
+   ===================================================== */
+const KEY_DIRS = {
+  ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right',
+  w: 'up', s: 'down', a: 'left', d: 'right',
+  W: 'up', S: 'down', A: 'left', D: 'right'
+};
+
+window.addEventListener('keydown', e => {
+  if (KEY_DIRS[e.key]) {
+    held.add(KEY_DIRS[e.key]);
+    e.preventDefault();
+    return;
+  }
+  if (e.key === 'e' || e.key === 'E' || e.key === ' ' || e.key === 'Enter') {
+    e.preventDefault();
+    if (battle.active) { window.dispatchEvent(new Event('battle-advance')); return; }
+    if (dlg.open) { advanceDialog(); return; }
+    interact();
+    return;
+  }
+  if ((e.key === 'p' || e.key === 'P') && !battle.active) {
+    if ($('party-overlay').style.display === 'flex') $('party-overlay').style.display = 'none';
+    else openParty();
+  }
+});
+
+window.addEventListener('keyup', e => {
+  if (KEY_DIRS[e.key]) held.delete(KEY_DIRS[e.key]);
+});
+
+window.addEventListener('blur', () => held.clear());
+
+/* =====================================================
+   BOOT
+   ===================================================== */
+$('champ-continue').addEventListener('click', () => { $('champion-overlay').style.display = 'none'; });
+$('champ-newgame').addEventListener('click', () => { localStorage.removeItem(SAVE_KEY); location.reload(); });
+
+function boot() {
+  const hasSave = (() => {
+    try { return !!localStorage.getItem(SAVE_KEY); } catch (e) { return false; }
+  })();
+  $('title-overlay').style.display = 'flex';
+  if (hasSave) $('continue-btn').style.display = 'inline-block';
+
+  $('continue-btn').addEventListener('click', () => {
+    loadGame();
+    startWorld();
+  });
+  $('newgame-btn').addEventListener('click', () => {
+    try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+    G.money = 1000;
+    startWorld(true);
+  });
+}
+
+async function startWorld(isNew) {
+  $('title-overlay').style.display = 'none';
+  $('overworld').style.display = 'block';
+  updateHUD();
+  requestAnimationFrame(gameLoop);
+  if (isNew) {
+    await owSay([
+      'Welcome to the world of monsters!',
+      'Visit Prof. Willow\'s LAB (the building with the 🔬) to get your first partner.',
+      'Move with WASD or the arrow keys. Press E to talk and interact!'
+    ]);
+  }
+}
+
+boot();
 </script>
 </body>
 </html>
