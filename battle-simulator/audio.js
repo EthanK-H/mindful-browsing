@@ -78,6 +78,44 @@ function noiseHit(t, dur, gain, freq, dest) {
   src.start(t); src.stop(t + dur);
 }
 
+// richer synth voice: ADSR, optional lowpass + detune for warmth
+function voice(freq, t, dur, o) {
+  o = o || {};
+  const type = o.type || 'triangle';
+  const gain = o.gain != null ? o.gain : 0.14;
+  const dest = o.dest || musicGain;
+  const attack = o.attack != null ? o.attack : 0.02;
+  const release = o.release != null ? o.release : 0.1;
+  const osc = ctx.createOscillator();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, t);
+  if (o.glideTo) osc.frequency.exponentialRampToValueAtTime(o.glideTo, t + dur);
+  if (o.detune) osc.detune.setValueAtTime(o.detune, t);
+  let out = osc;
+  if (o.cutoff) {
+    const f = ctx.createBiquadFilter();
+    f.type = 'lowpass';
+    f.frequency.setValueAtTime(o.cutoff, t);
+    f.Q.value = o.q || 0.7;
+    osc.connect(f); out = f;
+  }
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(gain, t + attack);
+  g.gain.setValueAtTime(gain, t + Math.max(attack + 0.001, dur - release));
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  out.connect(g); g.connect(dest);
+  osc.start(t); osc.stop(t + dur + 0.05);
+}
+
+// warm detuned chord pad
+function pad(freqs, t, dur, gain, type) {
+  for (const f of freqs) {
+    voice(f, t, dur, { type: type || 'sine', gain: gain, detune: 7, cutoff: 1700, attack: 0.12, release: 0.35 });
+    voice(f, t, dur, { type: type || 'sine', gain: gain * 0.75, detune: -7, cutoff: 1700, attack: 0.12, release: 0.35 });
+  }
+}
+
 // ---- note tables (Hz) ------------------------------------------
 const N = {
   C3:130.81, D3:146.83, E3:164.81, F3:174.61, G3:196.00, A3:220.00, B3:246.94,
@@ -86,71 +124,101 @@ const N = {
   Gs4:415.30, Eb4:311.13, Bb4:466.16, Ab4:415.30, Fs4:369.99
 };
 
-// Overworld: gentle 3/4 clockwork waltz in A minor
-const WORLD_BASS = [N.A3, N.E3, N.E3, N.F3, N.C4, N.C4, N.G3, N.D4, N.D4, N.E3, N.B3, N.B3];
+// ===== Overworld: a clockwork waltz in A minor, 8-bar loop =====
+// chord per bar: root (for bass) + triad (for pad), plus an arp set
+const WORLD_PROG = [
+  { root: N.A3, triad: [N.A3, N.C4, N.E4] }, // Am
+  { root: N.F3, triad: [N.F3, N.A3, N.C4] }, // F
+  { root: N.C4, triad: [N.C4, N.E4, N.G4] }, // C
+  { root: N.G3, triad: [N.G3, N.B3, N.D4] }, // G
+  { root: N.A3, triad: [N.A3, N.C4, N.E4] }, // Am
+  { root: N.F3, triad: [N.F3, N.A3, N.C4] }, // F
+  { root: N.E3, triad: [N.E3, N.Gs4, N.B4] }, // E (harmonic-minor V)
+  { root: N.A3, triad: [N.A3, N.C4, N.E4] }  // Am
+];
+// melody: one slot per beat across 8 bars (24 beats); 0 = rest
 const WORLD_MEL = [
-  N.A4, N.C5, N.E5, N.D5, N.C5, N.B4,
-  N.C5, N.E5, N.A5, N.G5, N.E5, N.C5,
-  N.F4, N.A4, N.C5, N.E5, N.D5, N.C5,
-  N.E4, N.Gs4, N.B4, N.A4, 0, 0
+  N.A4, 0, N.E5,  N.F5, 0, N.E5,  N.G5, 0, N.E5,  N.D5, 0, N.B4,
+  N.C5, 0, N.A4,  N.D5, 0, N.F5,  N.E5, 0, N.Gs4, N.A4, 0, 0
 ];
 
-// Battle: tense 4/4 in A minor with arpeggio drive
-const BATTLE_BASS = [N.A3, N.A3, N.G3, N.G3, N.F3, N.F3, N.E3, N.E3];
-const BATTLE_ARP = [
-  N.A4, N.E5, N.C5, N.E5, N.A4, N.E5, N.C5, N.E5,
-  N.G4, N.D5, N.B4, N.D5, N.G4, N.D5, N.B4, N.D5,
-  N.F4, N.C5, N.A4, N.C5, N.F4, N.C5, N.A4, N.C5,
-  N.E4, N.B4, N.Gs4, N.B4, N.E5, N.B4, N.Gs4, N.B4
+// ===== Battle: driving 4/4 in A minor, 8-bar loop =====
+const BATTLE_PROG = [
+  { root: N.A3, triad: [N.A3, N.C4, N.E4], arp: [N.A4, N.C5, N.E5, N.C5] },
+  { root: N.A3, triad: [N.A3, N.C4, N.E4], arp: [N.A4, N.E5, N.C5, N.E5] },
+  { root: N.F3, triad: [N.F3, N.A3, N.C4], arp: [N.F4, N.A4, N.C5, N.A4] },
+  { root: N.G3, triad: [N.G3, N.B3, N.D4], arp: [N.G4, N.B4, N.D5, N.B4] },
+  { root: N.C4, triad: [N.C4, N.E4, N.G4], arp: [N.C5, N.E5, N.G5, N.E5] },
+  { root: N.D4, triad: [N.D4, N.F4, N.A4], arp: [N.D5, N.F5, N.A5, N.F5] },
+  { root: N.E3, triad: [N.E3, N.Gs4, N.B4], arp: [N.E5, N.Gs4, N.B4, N.Gs4] },
+  { root: N.E3, triad: [N.E3, N.Gs4, N.B4], arp: [N.B4, N.E5, N.Gs4 * 2, N.E5] }
 ];
-const BATTLE_MEL = [N.A5, 0, N.G5, N.A5, 0, N.E5, 0, 0, N.F5, 0, N.E5, N.D5, 0, N.C5, 0, 0];
+// lead melody, one slot per 8th (4 per bar) across 8 bars = 32; 0 = rest
+const BATTLE_MEL = [
+  N.A5, 0, N.G5, N.A5,  0, N.E5, 0, N.A5,
+  N.F5, 0, N.E5, N.D5,  N.E5, 0, N.D5, 0,
+  N.G5, 0, N.E5, N.C5,  N.A5, 0, N.G5, N.A5,
+  N.Gs4 * 2, 0, N.B4 * 2, 0,  N.A5, 0, N.E5, 0
+];
 
 function scheduler() {
   if (!ctx || !currentTrack) return;
   while (nextNoteTime < ctx.currentTime + 0.2) {
     if (currentTrack === 'world') scheduleWorld(nextNoteTime, step);
     else scheduleBattle(nextNoteTime, step);
-    const beat = currentTrack === 'world' ? 0.34 : 0.156;
+    const beat = currentTrack === 'world' ? 0.34 : 0.152;
     nextNoteTime += beat;
     step++;
   }
 }
 
 function scheduleWorld(t, s) {
-  const bar = Math.floor(s / 3);
   const beatInBar = s % 3;
-  const bi = bar % 12;
-  // bass on beat 1, chord stabs on 2 & 3 (waltz)
+  const bar = Math.floor(s / 3) % 8;
+  const ch = WORLD_PROG[bar];
+
   if (beatInBar === 0) {
-    note(WORLD_BASS[bi] / 2, t, 0.5, 'sine', 0.28);
-    tick(t, 0.04);
+    // downbeat: sub-bass + sustained pad for the whole bar + soft tick
+    voice(ch.root / 2, t, 0.55, { type: 'triangle', gain: 0.26, cutoff: 700, attack: 0.01, release: 0.2 });
+    pad(ch.triad, t, 1.02, 0.045, 'sine');
+    tick(t, 0.035);
   } else {
-    const root = WORLD_BASS[bi];
-    note(root, t, 0.28, 'triangle', 0.12);
-    note(root * 1.5, t, 0.28, 'triangle', 0.09);
-    tick(t, 0.025);
+    // up-beats: gentle plucked chord stabs (the "oom-pah-pah")
+    voice(ch.triad[1], t, 0.26, { type: 'triangle', gain: 0.09, cutoff: 2200, release: 0.12 });
+    voice(ch.triad[2], t, 0.26, { type: 'triangle', gain: 0.07, cutoff: 2200, release: 0.12 });
+    tick(t, 0.02);
   }
-  // melody: one note per beat, two bars per phrase note
-  const mi = s % WORLD_MEL.length;
-  if (WORLD_MEL[mi]) note(WORLD_MEL[mi], t, 0.46, 'triangle', 0.16);
+
+  // lead melody (music-box bell)
+  const mel = WORLD_MEL[s % WORLD_MEL.length];
+  if (mel) {
+    voice(mel, t, 0.5, { type: 'triangle', gain: 0.15, cutoff: 3200, attack: 0.01, release: 0.25 });
+    voice(mel * 2, t, 0.4, { type: 'sine', gain: 0.04, attack: 0.01, release: 0.2 }); // shimmer
+  }
+  // high music-box arpeggio counter-line
+  voice(ch.triad[beatInBar % 3] * 2, t, 0.22, { type: 'sine', gain: 0.05, release: 0.1 });
 }
 
 function scheduleBattle(t, s) {
-  const ai = s % BATTLE_ARP.length;
-  const bi = Math.floor(s / 4) % BATTLE_BASS.length;
-  // bass pulse every 2 steps
-  if (s % 2 === 0) note(BATTLE_BASS[bi] / 2, t, 0.3, 'sawtooth', 0.16);
-  // arpeggio drive
-  note(BATTLE_ARP[ai], t, 0.13, 'square', 0.07);
-  // melody every 2 steps
-  if (s % 2 === 0) {
-    const mi = Math.floor(s / 2) % BATTLE_MEL.length;
-    if (BATTLE_MEL[mi]) note(BATTLE_MEL[mi], t, 0.26, 'triangle', 0.17);
-  }
-  // hi-hat tick
-  if (s % 2 === 1) tick(t, 0.03);
-  // kick on downbeats
-  if (s % 4 === 0) noiseHit(t, 0.08, 0.12, 220, musicGain);
+  const step8 = s % 4;          // 8th within the bar
+  const bar = Math.floor(s / 4) % 8;
+  const ch = BATTLE_PROG[bar];
+
+  // pulsing sub-bass on every 8th, accent on the beat
+  voice(ch.root / 2, t, 0.16, { type: 'sawtooth', gain: step8 % 2 === 0 ? 0.17 : 0.1, cutoff: 600, release: 0.05 });
+  // sustained pad once per bar
+  if (step8 === 0) pad(ch.triad, t, 0.62, 0.04, 'sine');
+  // arpeggio drive (bright square through a filter)
+  voice(ch.arp[step8], t, 0.14, { type: 'square', gain: 0.06, cutoff: 2600, release: 0.05 });
+
+  // lead melody
+  const mel = BATTLE_MEL[s % BATTLE_MEL.length];
+  if (mel) voice(mel, t, 0.26, { type: 'triangle', gain: 0.16, cutoff: 3400, attack: 0.01, release: 0.12 });
+
+  // percussion: kick on beats, snare on the back-beat, hats on off-8ths
+  if (step8 === 0) noiseHit(t, 0.09, 0.13, 150, musicGain);
+  if (step8 === 2) noiseHit(t, 0.12, 0.10, 1600, musicGain);
+  if (step8 % 2 === 1) tick(t, 0.028);
 }
 
 function playTrack(name) {
