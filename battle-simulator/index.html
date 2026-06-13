@@ -335,15 +335,15 @@ const MAPS = {
       "#....S.............#",
       "#..................#",
       "#...,,,......,,,...#",
-      "#..................#",
-      "#..................#",
+      "#.............AAAA.#",
+      "#.............AAaA.#",
       "#,,..............,,#",
       "#,,,,,,,,,,,,,,,,,,#",
       "####################",
       "####################"
     ],
     warps: [{ x: 9, y: 0, map: 'route1', tx: 9, ty: 12 }],
-    signs: { '5,5': 'WILLOWBROOK TOWN\n"Where every journey begins."\nProf. Willow\'s lab is to the northwest.' },
+    signs: { '5,5': 'WILLOWBROOK TOWN\n"Where every journey begins."\nThe ACADEMY (bottom-right) trains your lead for free.\nProf. Willow\'s lab is to the northwest.' },
     npcs: [
       {
         id: 'assistant', sprite: '🧑‍🔬', name: 'Assistant',
@@ -353,7 +353,7 @@ const MAPS = {
           : ['Whoa there! The tall grass is dangerous without a monster of your own.', 'Professor Willow has a gift for you in the LAB — the building with the microscope plaque!']
       },
       {
-        id: 'granny', sprite: '👵', pos: () => ({ x: 14, y: 8 }), name: 'Granny',
+        id: 'granny', sprite: '👵', pos: () => ({ x: 5, y: 8 }), name: 'Granny',
         lines: () => ['In my day we walked everywhere too.', 'Press P to check on your team, dearie.']
       }
     ],
@@ -520,13 +520,76 @@ const MAPS = {
 };
 
 // Normalize map rows to exactly MAP_W chars
-for (const m of Object.values(MAPS)) {
-  m.rows = m.rows.map(r => (r + '####################').slice(0, MAP_W));
-  while (m.rows.length < MAP_H) m.rows.push('#'.repeat(MAP_W));
+function normalizeRows(rows) {
+  rows = rows.map(r => (r + '####################').slice(0, MAP_W));
+  while (rows.length < MAP_H) rows.push('#'.repeat(MAP_W));
+  return rows;
+}
+for (const m of Object.values(MAPS)) m.rows = normalizeRows(m.rows);
+
+/* ---------- building interiors (generated) ---------- */
+const DOOR_KINDS = { l: 'lab', h: 'heal', m: 'shop', g: 'gym', a: 'train' };
+const BUILDING_LABEL = { l: 'Laboratory', h: 'Heal Centre', m: 'Monster Mart', g: 'Gym', a: 'Training Academy' };
+
+// 20x14 room: B wall, F floor, C counter, R rug, X exit mat
+const INTERIOR_TEMPLATE = [
+  "BBBBBBBBBBBBBBBBBBBB",
+  "BFFFFFFFFFFFFFFFFFFB",
+  "BFFFFFCCCCCCCCFFFFFB",
+  "BFFFFFFFFFFFFFFFFFFB",
+  "BFFFFFFFFFFFFFFFFFFB",
+  "BFFFFFFRRRRRRFFFFFFB",
+  "BFFFFFFRRRRRRFFFFFFB",
+  "BFFFFFFRRRRRRFFFFFFB",
+  "BFFFFFFFFFFFFFFFFFFB",
+  "BFFFFFFFFFFFFFFFFFFB",
+  "BFFFFFFFFFFFFFFFFFFB",
+  "BBBBBBBBBXBBBBBBBBBB",
+  "BBBBBBBBBBBBBBBBBBBB",
+  "BBBBBBBBBBBBBBBBBBBB"
+];
+
+const INTERIOR_NPC = {
+  l: { art: 'professor', name: 'Prof. Willow' },
+  h: { art: 'nurse',     name: 'Nurse' },
+  m: { art: 'clerk',     name: 'Clerk' },
+  a: { art: 'coach',     name: 'Coach Dex' }
+};
+
+function buildInterior(town, kind, dx, dy) {
+  const key = `${town}__${kind}_${dx}_${dy}`;
+  const gym = kind === 'g' ? MAPS[town].gym : null;
+  const art = kind === 'g' ? gym.id : INTERIOR_NPC[kind].art;
+  const name = kind === 'g' ? gym.leader : INTERIOR_NPC[kind].name;
+  const healReturn = { map: town, x: dx, y: dy + 1 };
+
+  const npc = {
+    id: key + '_npc', art, name,
+    building: DOOR_KINDS[kind], gym,
+    pos: () => ({ x: 9, y: 4 }),
+    lines: () => ['']
+  };
+  MAPS[key] = {
+    label: `${MAPS[town].label} — ${BUILDING_LABEL[kind]}`,
+    interior: true, parent: town, healReturn,
+    rows: normalizeRows([...INTERIOR_TEMPLATE]),
+    warps: [{ x: 9, y: 11, map: town, tx: dx, ty: dy + 1 }],
+    signs: {}, npcs: [npc], wild: null
+  };
+  MAPS[town].warps.push({ x: dx, y: dy, map: key, tx: 9, ty: 10 });
 }
 
-const WALKABLE = new Set(['.', ',', 'T']);
-const DOOR_KINDS = { l: 'lab', h: 'heal', m: 'shop', g: 'gym' };
+// scan every town for door tiles and wire up interiors
+for (const [town, m] of Object.entries(MAPS)) {
+  if (m.interior) continue;
+  for (let y = 0; y < MAP_H; y++) {
+    for (let x = 0; x < MAP_W; x++) {
+      if ('lhmga'.includes(m.rows[y][x])) buildInterior(town, m.rows[y][x], x, y);
+    }
+  }
+}
+
+const WALKABLE = new Set(['.', ',', 'T', 'F', 'X', 'R', 'l', 'h', 'm', 'g', 'a']);
 
 /* =====================================================
    MONSTERS — stats, XP, leveling
@@ -724,7 +787,7 @@ const held = new Set();
 
 const uiLocked = () => dlg.open || battle.active || overlayOpen();
 const overlayOpen = () =>
-  ['title-overlay', 'party-overlay', 'champion-overlay'].some(id => $(id).style.display === 'flex');
+  ['title-overlay', 'party-overlay', 'champion-overlay', 'evo-overlay'].some(id => $(id).style.display === 'flex');
 
 function tileAt(map, x, y) {
   if (x < 0 || y < 0 || x >= MAP_W || y >= MAP_H) return '#';
@@ -811,12 +874,8 @@ async function interact() {
   if (t === 'S') {
     const text = map.signs[`${fx},${fy}`];
     if (text) await owSay(text);
-    return;
   }
-  if (t === 'h') return useHealCenter();
-  if (t === 'm') return useShop();
-  if (t === 'l') return useLab();
-  if (t === 'g') return useGym(map.gym);
+  // building doors are now walkable warps — step onto them to enter.
 }
 
 async function interactNPC(npc) {
@@ -828,15 +887,44 @@ async function interactNPC(npc) {
     startBattle({ kind: 'trainer', trainer: tr });
     return;
   }
+  if (npc.building) {
+    if (npc.building === 'lab') return useLab();
+    if (npc.building === 'heal') return useHealCenter();
+    if (npc.building === 'shop') return useShop();
+    if (npc.building === 'gym') return useGym(npc.gym);
+    if (npc.building === 'train') return useTrainingHall();
+  }
   await owSay(npc.lines().map(l => `${npc.name}: ${l}`));
 }
 
 async function useHealCenter() {
   await owSay(['Nurse: Welcome! Let me heal your team to full health.']);
   healParty();
-  G.lastHeal = { map: G.map, x: player.x, y: player.y };
+  const here = MAPS[G.map];
+  G.lastHeal = here.healReturn || { map: G.map, x: player.x, y: player.y };
   saveGame();
   await owSay(['Nurse: There you go — everyone\'s feeling great! Come back any time.']);
+}
+
+async function useTrainingHall() {
+  if (!G.party.length) return owSay(['Coach Dex: Come back once you have a monster to train!']);
+  await owSay(['Coach Dex: Welcome to the Academy! I can train your lead monster for free — handy for testing out evolutions.']);
+  while (true) {
+    const lead = G.party[0];
+    const opts = ['Train +1 level', 'Train +5 levels', 'Leave'];
+    const i = await owChoice(`${lead.name} is Lv${lead.level}. What'll it be?`, opts);
+    if (i === 2) break;
+    const n = i === 0 ? 1 : 5;
+    for (let k = 0; k < n && lead.level < 60; k++) applyLevelUp(lead);
+    lead.hp = lead.maxHp;
+    for (const mv of lead.moves) lead.pp[mv] = MOVES[mv].pp;
+    AUDIO.sfx.levelup();
+    await owSay([`${lead.name} trained hard and is now Lv${lead.level}!`]);
+    await checkEvolutions(lead);
+    updateHUD();
+    saveGame();
+  }
+  await owSay(['Coach Dex: Keep up the good work, trainer!']);
 }
 
 function healParty() {
@@ -938,9 +1026,14 @@ function terrainImg(t) {
     case '#': return getImg('t#', ART.terrain.tree);
     case 'W': return getImg('tW', ART.terrain.water);
     case 'S': return getImg('tS', ART.sign);
+    case 'F': return getImg('tF', ART.terrain.floor);
+    case 'X': return getImg('tX', ART.terrain.mat);
+    case 'B': return getImg('tB', ART.terrain.wall);
+    case 'C': return getImg('tC', ART.terrain.counter);
+    case 'R': return getImg('tR', ART.terrain.rug);
     default: {
       const kind = t.toUpperCase();
-      if ('LHMG'.includes(kind)) {
+      if ('LHMGA'.includes(kind)) {
         const isDoor = (t !== kind);
         return getImg('b' + t, ART.buildingWall(kind, isDoor));
       }
@@ -951,8 +1044,8 @@ function terrainImg(t) {
 function ready(im) { return im && im.complete && im.naturalWidth; }
 
 function preloadArt() {
-  for (const t of ['.', ',', 'T', '#', 'W', 'S']) terrainImg(t);
-  for (const t of ['L', 'l', 'H', 'h', 'M', 'm', 'G', 'g']) terrainImg(t);
+  for (const t of ['.', ',', 'T', '#', 'W', 'S', 'F', 'X', 'B', 'C', 'R']) terrainImg(t);
+  for (const t of ['L', 'l', 'H', 'h', 'M', 'm', 'G', 'g', 'A', 'a']) terrainImg(t);
   for (const k of Object.keys(ART.characters)) getImg('c' + k, ART.characters[k]);
   for (const k of Object.keys(ART.roof)) getImg('r' + k, ART.roof[k]);
 }
@@ -972,7 +1065,7 @@ function renderWorld() {
     for (let x = 0; x < MAP_W; x++) {
       const t = map.rows[y][x];
       const im = terrainImg(t);
-      if ('LHMGlhmgS'.includes(t) && ready(grass)) {
+      if ('LHMGAlhmgaS'.includes(t) && ready(grass)) {
         ctx.fillStyle = '#6f9a4a';
         ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
       }
@@ -984,7 +1077,7 @@ function renderWorld() {
   for (let y = 0; y < MAP_H; y++) {
     for (let x = 0; x < MAP_W; x++) {
       const t = map.rows[y][x];
-      if ('lhmg'.includes(t)) {
+      if ('lhmga'.includes(t)) {
         const im = getImg('r' + t, ART.roof[t]);
         if (ready(im)) ctx.drawImage(im, x * TILE + 4, (y - 1) * TILE + 2, TILE - 8, TILE - 8);
       }
@@ -994,7 +1087,8 @@ function renderWorld() {
   // NPCs
   for (const n of map.npcs) {
     const p = n.pos();
-    const im = getImg('c' + (NPC_ART[n.id] || 'kid'), ART.characters[NPC_ART[n.id] || 'kid']);
+    const artKey = n.art || NPC_ART[n.id] || 'kid';
+    const im = getImg('c' + artKey, ART.characters[artKey]);
     if (ready(im)) ctx.drawImage(im, p.x * TILE - 4, p.y * TILE - 12, TILE + 8, TILE + 10);
     if (n.trainer && !G.flags['beat_' + n.trainer.id]) {
       const t = performance.now();
