@@ -3,393 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Monster Quest</title>
-<style>
-  :root {
-    --screen-bg: #f8f8e8;
-    --ui-border: #383030;
-    --hp-green: #58d058;
-    --hp-yellow: #f8c038;
-    --hp-red: #f05858;
-  }
-
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  body {
-    font-family: 'Courier New', monospace;
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 12px;
-    color: #222;
-  }
-
-  .game-shell { width: 100%; max-width: 700px; }
-
-  h1.title {
-    text-align: center;
-    color: #f8d030;
-    text-shadow: 3px 3px 0 #383030;
-    font-size: 24px;
-    letter-spacing: 2px;
-    margin-bottom: 10px;
-  }
-
-  .screen {
-    background: var(--screen-bg);
-    border: 6px solid var(--ui-border);
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.6);
-  }
-
-  /* ============ OVERWORLD ============ */
-  #overworld { display: none; }
-
-  #hud {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 7px 12px;
-    background: #383030;
-    color: #f8f8e8;
-    font-size: 13px;
-    font-weight: bold;
-    flex-wrap: wrap;
-  }
-  #hud .spacer { flex: 1; }
-  #hud button {
-    font-family: inherit;
-    font-weight: bold;
-    font-size: 12px;
-    padding: 3px 10px;
-    border-radius: 6px;
-    border: 2px solid #f8d030;
-    background: #584830;
-    color: #f8d030;
-    cursor: pointer;
-  }
-  #hud button:hover { background: #6a5838; }
-
-  #ow-wrap { position: relative; line-height: 0; }
-  #ow-canvas { width: 100%; height: auto; display: block; image-rendering: pixelated; }
-
-  #ow-dialog {
-    position: absolute;
-    left: 10px; right: 10px; bottom: 10px;
-    background: var(--screen-bg);
-    border: 4px solid var(--ui-border);
-    border-radius: 10px;
-    padding: 12px 16px;
-    font-size: 16px;
-    line-height: 1.5;
-    display: none;
-    cursor: pointer;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-  }
-  #ow-dialog-text { min-height: 24px; white-space: pre-line; }
-  #ow-arrow { float: right; color: #888; font-size: 13px; animation: bob 0.8s infinite alternate; }
-  #ow-choices { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-  #ow-choices button {
-    font-family: inherit;
-    font-size: 14px;
-    font-weight: bold;
-    padding: 7px 14px;
-    border: 3px solid var(--ui-border);
-    border-radius: 8px;
-    background: #fff;
-    cursor: pointer;
-  }
-  #ow-choices button:hover { background: #f8f0d8; }
-
-  .keys-hint {
-    padding: 6px 12px;
-    font-size: 11px;
-    color: #888;
-    background: #efe8d8;
-    border-top: 3px solid var(--ui-border);
-    text-align: center;
-  }
-
-  /* ============ BATTLE SCREEN ============ */
-  #battle-screen { display: none; }
-
-  .arena {
-    position: relative;
-    height: 320px;
-    background: linear-gradient(to bottom, #a8e0f8 0%, #c8ecf8 55%, #88c860 55%, #a8d878 100%);
-    overflow: hidden;
-  }
-  @keyframes quake {
-    0%,100% { transform: translate(0,0); }
-    20% { transform: translate(-7px,3px); }
-    40% { transform: translate(7px,-3px); }
-    60% { transform: translate(-5px,-4px); }
-    80% { transform: translate(5px,4px); }
-  }
-  .arena.quake { animation: quake 0.4s; }
-
-  #fx-canvas {
-    position: absolute; inset: 0;
-    width: 100%; height: 100%;
-    pointer-events: none;
-    z-index: 5;
-  }
-  #fx-flash {
-    position: absolute; inset: 0;
-    pointer-events: none;
-    opacity: 0;
-    z-index: 4;
-  }
-
-  .platform {
-    position: absolute;
-    width: 200px; height: 44px;
-    background: radial-gradient(ellipse at center, #d8c878 0%, #c0a858 70%, transparent 71%);
-    border-radius: 50%;
-  }
-  .platform.enemy { top: 120px; right: 36px; }
-  .platform.player { bottom: -8px; left: 36px; }
-
-  .combatant {
-    position: absolute;
-    font-size: 76px;
-    line-height: 1;
-    filter: drop-shadow(2px 4px 3px rgba(0,0,0,0.3));
-    transition: opacity 0.4s, transform 0.35s;
-    z-index: 3;
-  }
-  #enemy-sprite { top: 58px; right: 96px; }
-  #player-sprite { bottom: 26px; left: 96px; transform: scaleX(-1); }
-
-  .combatant.fainted { opacity: 0; transform: translateY(60px) rotate(35deg); }
-  #player-sprite.fainted { transform: scaleX(-1) translateY(60px) rotate(-35deg); }
-
-  @keyframes shake {
-    0%, 100% { margin-left: 0; }
-    20% { margin-left: -12px; }
-    40% { margin-left: 12px; }
-    60% { margin-left: -8px; }
-    80% { margin-left: 8px; }
-  }
-  .combatant.hit { animation: shake 0.45s ease; }
-
-  @keyframes hitflash {
-    0%, 100% { filter: drop-shadow(2px 4px 3px rgba(0,0,0,0.3)) brightness(1); }
-    25%, 75% { filter: drop-shadow(2px 4px 3px rgba(0,0,0,0.3)) brightness(3); }
-    50% { filter: drop-shadow(2px 4px 3px rgba(0,0,0,0.3)) brightness(0.6); }
-  }
-  .combatant.flash { animation: hitflash 0.45s; }
-
-  @keyframes lunge-right {
-    0%, 100% { margin-top: 0; margin-left: 0; }
-    40% { margin-left: 30px; margin-top: -14px; }
-  }
-  @keyframes lunge-left {
-    0%, 100% { margin-top: 0; margin-right: 0; }
-    40% { margin-right: 30px; margin-top: 14px; }
-  }
-  #player-sprite.attacking { animation: lunge-right 0.4s ease; }
-  #enemy-sprite.attacking { animation: lunge-left 0.4s ease; }
-
-  .info-box {
-    position: absolute;
-    width: 250px;
-    background: var(--screen-bg);
-    border: 3px solid var(--ui-border);
-    border-radius: 8px;
-    padding: 8px 12px;
-    box-shadow: 3px 3px 0 rgba(0,0,0,0.25);
-    z-index: 6;
-  }
-  #enemy-info { top: 18px; left: 18px; }
-  #player-info { bottom: 18px; right: 18px; }
-
-  .info-box .row1 {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    font-weight: bold;
-    font-size: 14px;
-  }
-
-  .hp-track { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
-  .hp-label {
-    font-size: 10px; font-weight: bold;
-    color: #f8a830; background: #484038;
-    padding: 1px 5px; border-radius: 4px;
-  }
-  .hp-outer { flex: 1; height: 10px; background: #585048; border-radius: 5px; padding: 2px; }
-  .hp-inner {
-    height: 100%; width: 100%;
-    background: var(--hp-green);
-    border-radius: 3px;
-    transition: width 0.7s ease, background-color 0.7s;
-  }
-  .hp-text { text-align: right; font-size: 12px; font-weight: bold; margin-top: 4px; }
-
-  .team-dots { display: flex; gap: 4px; margin-top: 6px; }
-  .team-dots .dot {
-    width: 10px; height: 10px;
-    border-radius: 50%;
-    border: 2px solid #585048;
-    background: #e03028;
-  }
-  .team-dots .dot.empty { background: transparent; }
-
-  /* ============ MESSAGE / MENU PANEL ============ */
-  .panel { border-top: 6px solid var(--ui-border); background: #fff; min-height: 138px; display: flex; }
-
-  #message-box {
-    flex: 1;
-    padding: 16px 20px;
-    font-size: 17px;
-    line-height: 1.6;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    cursor: pointer;
-  }
-  #message-box .continue {
-    align-self: flex-end;
-    animation: bob 0.8s infinite alternate;
-    font-size: 13px; color: #888;
-  }
-  @keyframes bob { from { transform: translateY(0); } to { transform: translateY(4px); } }
-
-  #menu-box { flex: 1; display: none; flex-direction: column; padding: 12px 16px; }
-  #menu-prompt { font-size: 15px; font-weight: bold; margin-bottom: 8px; }
-
-  .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; flex: 1; }
-
-  .menu-btn {
-    font-family: inherit;
-    font-size: 14px;
-    font-weight: bold;
-    border: 3px solid var(--ui-border);
-    border-radius: 8px;
-    background: #fff;
-    cursor: pointer;
-    padding: 8px 10px;
-    text-align: left;
-    transition: background 0.1s, transform 0.05s;
-  }
-  .menu-btn:hover:not(:disabled) { background: #f8f0d8; transform: translateY(-1px); }
-  .menu-btn:disabled { opacity: 0.45; cursor: not-allowed; }
-  .menu-btn .sub { display: block; font-size: 11px; font-weight: normal; color: #666; margin-top: 2px; }
-  .menu-btn.back-btn { background: #f0e8e8; text-align: center; }
-
-  /* ============ OVERLAYS ============ */
-  .overlay {
-    position: fixed; inset: 0;
-    background: rgba(10, 10, 30, 0.85);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 50;
-    padding: 16px;
-  }
-  .overlay-card {
-    background: var(--screen-bg);
-    border: 6px solid var(--ui-border);
-    border-radius: 14px;
-    padding: 28px 36px;
-    text-align: center;
-    animation: pop-in 0.35s ease;
-    max-width: 460px;
-    width: 100%;
-  }
-  @keyframes pop-in {
-    from { transform: scale(0.7); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
-  }
-  .overlay-card h2 { font-size: 26px; margin-bottom: 8px; }
-  .overlay-card p { color: #555; margin-bottom: 18px; font-size: 14px; line-height: 1.5; }
-
-  .big-btn {
-    font-family: inherit;
-    font-size: 15px;
-    font-weight: bold;
-    padding: 11px 26px;
-    border: 4px solid var(--ui-border);
-    border-radius: 10px;
-    background: #f8d030;
-    cursor: pointer;
-    box-shadow: 0 4px 0 #b89820;
-    transition: transform 0.05s, box-shadow 0.05s;
-    margin: 4px;
-  }
-  .big-btn:hover { transform: translateY(2px); box-shadow: 0 2px 0 #b89820; }
-  .big-btn.secondary { background: #e8e0d0; box-shadow: 0 4px 0 #a89878; }
-
-  /* party panel */
-  #party-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; max-height: 50vh; overflow-y: auto; }
-  .party-card {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    border: 3px solid #b0a890;
-    border-radius: 10px;
-    background: #fff;
-    padding: 8px 12px;
-    cursor: pointer;
-    text-align: left;
-  }
-  .party-card:hover { border-color: #383030; }
-  .party-card.lead { border-color: #e0a020; background: #fff8e0; }
-  .party-card .psprite { font-size: 34px; }
-  .party-card .pinfo { flex: 1; font-size: 13px; line-height: 1.5; }
-  .party-card .pinfo b { font-size: 14px; }
-  .party-card .mini-hp { height: 7px; background: #585048; border-radius: 4px; padding: 1px; margin-top: 3px; }
-  .party-card .mini-hp > div { height: 100%; border-radius: 3px; background: var(--hp-green); }
-
-  /* battle transition */
-  #battle-flash {
-    position: fixed; inset: 0;
-    background: #fff;
-    opacity: 0;
-    pointer-events: none;
-    z-index: 60;
-  }
-  @keyframes bflash { 0%,100% { opacity: 0; } 50% { opacity: 1; } }
-  #battle-flash.flashing { animation: bflash 0.3s 2; }
-
-  .type-badge {
-    display: inline-block;
-    padding: 1px 8px;
-    border-radius: 8px;
-    font-size: 10px;
-    font-weight: bold;
-    color: #fff;
-    text-transform: uppercase;
-  }
-
-  @media (max-width: 560px) {
-    .arena { height: 280px; }
-    .combatant { font-size: 56px; }
-    #enemy-sprite { right: 60px; }
-    #player-sprite { left: 60px; }
-    .info-box { width: 195px; padding: 6px 8px; }
-    .platform { width: 140px; }
-    .platform.enemy { right: 20px; }
-    .platform.player { left: 20px; }
-  }
-</style>
+<title>Gearbound — A Clockwork Quest</title>
+<link rel="stylesheet" href="theme.css">
 </head>
 <body>
 <div class="game-shell">
-  <h1 class="title">⚔ MONSTER QUEST ⚔</h1>
+  <h1 class="title"><span class="tgear">⚙</span> GEARBOUND <span class="tgear">⚙</span></h1>
 
   <!-- ============ OVERWORLD ============ -->
   <div class="screen" id="overworld">
     <div id="hud">
-      <span id="hud-loc">Willowbrook</span>
-      <span>💰 <span id="hud-money">0</span></span>
-      <span>⚪ <span id="hud-orbs">0</span></span>
-      <span>🧪 <span id="hud-potions">0</span></span>
-      <span id="hud-badges"></span>
+      <span class="hud-item" id="hud-loc">Willowbrook</span>
+      <span class="hud-item"><svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="#e2b04a" stroke="#5a3f16" stroke-width="1.5"/><text x="8" y="11.5" font-size="9" text-anchor="middle" fill="#5a3f16" font-family="Georgia">£</text></svg><span id="hud-money">0</span></span>
+      <span class="hud-item"><svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.5" fill="#cfd6dc" stroke="#5a3f16" stroke-width="1.5"/><path d="M2 8 h12" stroke="#5a3f16" stroke-width="1.2"/><circle cx="8" cy="8" r="2" fill="#b06a3b"/></svg><span id="hud-orbs">0</span></span>
+      <span class="hud-item"><svg width="16" height="16" viewBox="0 0 16 16"><rect x="5" y="6" width="6" height="8" rx="2" fill="#7fd0e0" stroke="#5a3f16" stroke-width="1.2"/><rect x="6" y="3" width="4" height="3" fill="#9a4f28"/></svg><span id="hud-potions">0</span></span>
+      <span class="hud-item" id="hud-badges"></span>
       <span class="spacer"></span>
       <button id="team-btn">TEAM (P)</button>
     </div>
@@ -407,6 +35,47 @@
   <!-- ============ BATTLE ============ -->
   <div class="screen" id="battle-screen">
     <div class="arena" id="arena">
+      <svg id="arena-bg" viewBox="0 0 688 320" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#b98a52"/>
+            <stop offset="0.5" stop-color="#d8b072"/>
+            <stop offset="0.52" stop-color="#7a9a5a"/>
+            <stop offset="1" stop-color="#5a7a42"/>
+          </linearGradient>
+          <radialGradient id="sun" cx="0.5" cy="0.5" r="0.5">
+            <stop offset="0" stop-color="#fff2c8" stop-opacity="0.9"/>
+            <stop offset="1" stop-color="#fff2c8" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <rect width="688" height="320" fill="url(#sky)"/>
+        <circle cx="540" cy="80" r="120" fill="url(#sun)"/>
+        <!-- distant clockwork city silhouette -->
+        <g fill="#6a4f30" opacity="0.55">
+          <rect x="40" y="120" width="40" height="56"/><rect x="48" y="100" width="8" height="24"/>
+          <rect x="100" y="105" width="30" height="71"/><rect x="150" y="130" width="50" height="46"/>
+          <rect x="560" y="115" width="44" height="61"/><rect x="620" y="100" width="30" height="76"/>
+        </g>
+        <!-- big slow gears behind the action -->
+        <g opacity="0.4" fill="#8a6a22" stroke="#5a3f16" stroke-width="2">
+          <g class="bg-gear" transform="translate(120 70)">
+            <path d="M0-40 6-38 8-30 16-28 18-20 26-18 24-10 30-4 24 2 26 10 18 14 14 22 6 22 0 30 -6 22 -14 22 -18 14 -26 10 -24 2 -30 -4 -24 -10 -26 -18 -18 -20 -16 -28 -8 -30 -6 -38Z"/>
+            <circle cx="0" cy="0" r="12" fill="#3a2c1e"/>
+          </g>
+          <g class="bg-gear2" transform="translate(600 200)">
+            <path d="M0-34 6-30 14-30 16-22 24-18 22-10 28-2 22 4 24 12 16 14 12 22 4 22 0 28 -4 22 -12 22 -16 14 -24 12 -22 4 -28 -2 -22 -10 -24 -18 -16 -22 -14 -30 -6 -30Z"/>
+            <circle cx="0" cy="0" r="10" fill="#3a2c1e"/>
+          </g>
+        </g>
+        <!-- drifting airship -->
+        <g class="airship" transform="translate(420 56)">
+          <ellipse cx="0" cy="0" rx="46" ry="18" fill="#9a7a4a" stroke="#5a3f16" stroke-width="2"/>
+          <path d="M-46 0 h92" stroke="#5a3f16" stroke-width="1.5"/>
+          <ellipse cx="0" cy="0" rx="46" ry="18" fill="url(#sun)" opacity="0.3"/>
+          <rect x="-12" y="16" width="24" height="8" rx="3" fill="#6a4f30" stroke="#3a2c1e"/>
+          <path d="M46 0 l10 -5 v10 Z" fill="#b06a3b" stroke="#5a3f16"/>
+        </g>
+      </svg>
       <div class="platform enemy"></div>
       <div class="platform player"></div>
       <div class="combatant" id="enemy-sprite"></div>
@@ -448,7 +117,7 @@
 <!-- ============ OVERLAYS ============ -->
 <div class="overlay" id="title-overlay">
   <div class="overlay-card">
-    <h2>⚔ MONSTER QUEST ⚔</h2>
+    <h2>GEARBOUND</h2>
     <p>Explore three towns, catch wild monsters in the tall grass,
        and defeat the two Gym Leaders to become Champion!</p>
     <button class="big-btn" id="continue-btn" style="display:none">CONTINUE</button>
@@ -467,7 +136,7 @@
 
 <div class="overlay" id="champion-overlay">
   <div class="overlay-card">
-    <h2>🏆 CHAMPION!</h2>
+    <h2>CHAMPION!</h2>
     <p>You've earned every badge in the region! Your name will be
        remembered in the Hall of Fame. You can keep exploring,
        catching, and battling as long as you like.</p>
@@ -477,7 +146,10 @@
 </div>
 
 <div id="battle-flash"></div>
+<button id="music-btn" title="Toggle music & sound">♪</button>
 
+<script src="sprites.js"></script>
+<script src="audio.js"></script>
 <script>
 'use strict';
 
@@ -640,7 +312,7 @@ const MAPS = {
         pos: () => G.flags.starter ? { x: 7, y: 1 } : { x: 9, y: 1 },
         lines: () => G.flags.starter
           ? ['Route 1 is just north of here.', 'Tall grass hides wild monsters — weaken them, then throw a Capture Orb!']
-          : ['Whoa there! The tall grass is dangerous without a monster of your own.', 'Professor Willow has a gift for you in the LAB — the building with the 🔬!']
+          : ['Whoa there! The tall grass is dangerous without a monster of your own.', 'Professor Willow has a gift for you in the LAB — the building with the microscope plaque!']
       },
       {
         id: 'granny', sprite: '👵', pos: () => ({ x: 14, y: 8 }), name: 'Granny',
@@ -816,7 +488,7 @@ for (const m of Object.values(MAPS)) {
 }
 
 const WALKABLE = new Set(['.', ',', 'T']);
-const DOOR_INFO = { l: ['lab', '🔬'], h: ['heal', '❤️'], m: ['shop', '🛒'], g: ['gym', '🏆'] };
+const DOOR_KINDS = { l: 'lab', h: 'heal', m: 'shop', g: 'gym' };
 
 /* =====================================================
    MONSTERS — stats, XP, leveling
@@ -921,12 +593,19 @@ function loadGame() {
    ===================================================== */
 function updateHUD() {
   $('hud-loc').textContent = MAPS[G.map].label;
-  $('hud-money').textContent = '$' + G.money;
+  $('hud-money').textContent = G.money;
   $('hud-orbs').textContent = G.items.orb;
   $('hud-potions').textContent = G.items.potion;
-  $('hud-badges').textContent = G.badges.length
-    ? 'Badges: ' + G.badges.map(b => b === 'Blaze Badge' ? '🔥' : '🌊').join(' ')
-    : 'Badges: —';
+  $('hud-badges').innerHTML = 'Badges: ' + (G.badges.length
+    ? G.badges.map(b => badgeSVG(b)).join(' ')
+    : '—');
+}
+
+function badgeSVG(b) {
+  const c = b === 'Blaze Badge' ? '#f0742a' : '#5fb6e0';
+  return `<svg width="15" height="15" viewBox="0 0 16 16" style="vertical-align:-2px">
+    <polygon points="8,1 10,6 15,6 11,9 13,15 8,11 3,15 5,9 1,6 6,6"
+      fill="${c}" stroke="#5a3f16" stroke-width="1"/></svg>`;
 }
 
 /* =====================================================
@@ -1101,7 +780,7 @@ async function useHealCenter() {
   healParty();
   G.lastHeal = { map: G.map, x: player.x, y: player.y };
   saveGame();
-  await owSay(['Nurse: There you go — everyone\'s feeling great! Come back any time. ❤️']);
+  await owSay(['Nurse: There you go — everyone\'s feeling great! Come back any time.']);
 }
 
 function healParty() {
@@ -1136,7 +815,7 @@ async function useLab() {
     'Prof. Willow: Ah, you must be the new trainer!',
     'Prof. Willow: Every great journey starts with a partner. Choose one of these three monsters!'
   ]);
-  const labels = STARTERS.map(s => `${SPECIES[s].sprite} ${s} (${SPECIES[s].type})`);
+  const labels = STARTERS.map(s => `${s} — ${SPECIES[s].type}`);
   const i = await owChoice('Which monster will you choose?', labels);
   const starter = makeMonster(STARTERS[i], 5);
   G.party.push(starter);
@@ -1146,7 +825,7 @@ async function useLab() {
   updateHUD();
   saveGame();
   await owSay([
-    `You received ${starter.name}! ${starter.sprite}`,
+    `You received ${starter.name}!`,
     'Prof. Willow: I\'ll throw in 5 Capture Orbs and 2 Potions too.',
     'Prof. Willow: Catch wild monsters in tall grass, beat the two Gym Leaders, and become Champion!'
   ]);
@@ -1178,139 +857,119 @@ async function whiteout() {
 }
 
 /* =====================================================
-   OVERWORLD RENDERING
+   OVERWORLD RENDERING (custom SVG art rasterized to canvas)
    ===================================================== */
+const NPC_ART = {
+  assistant: 'assistant', granny: 'granny', ben: 'kid', hiker: 'hiker',
+  kid: 'kid', cliff: 'cliff', sailor: 'sailor'
+};
+
+const artImg = {};
+function getImg(key, svg) {
+  let im = artImg[key];
+  if (!im) {
+    im = new Image();
+    im.src = 'data:image/svg+xml;charset=utf8,' + encodeURIComponent(svg);
+    artImg[key] = im;
+  }
+  return im;
+}
+function terrainImg(t) {
+  switch (t) {
+    case '.': return getImg('t.', ART.terrain.path);
+    case ',': return getImg('t,', ART.terrain.flower);
+    case 'T': return getImg('tT', ART.terrain.grass);
+    case '#': return getImg('t#', ART.terrain.tree);
+    case 'W': return getImg('tW', ART.terrain.water);
+    case 'S': return getImg('tS', ART.sign);
+    default: {
+      const kind = t.toUpperCase();
+      if ('LHMG'.includes(kind)) {
+        const isDoor = (t !== kind);
+        return getImg('b' + t, ART.buildingWall(kind, isDoor));
+      }
+    }
+  }
+  return null;
+}
+function ready(im) { return im && im.complete && im.naturalWidth; }
+
+function preloadArt() {
+  for (const t of ['.', ',', 'T', '#', 'W', 'S']) terrainImg(t);
+  for (const t of ['L', 'l', 'H', 'h', 'M', 'm', 'G', 'g']) terrainImg(t);
+  for (const k of Object.keys(ART.characters)) getImg('c' + k, ART.characters[k]);
+  for (const k of Object.keys(ART.roof)) getImg('r' + k, ART.roof[k]);
+}
+
 function renderWorld() {
   if ($('overworld').style.display === 'none') return;
   const map = MAPS[G.map];
   const ctx = owCtx;
-  const time = performance.now();
 
-  for (let y = 0; y < MAP_H; y++) {
-    for (let x = 0; x < MAP_W; x++) {
-      drawTile(ctx, map.rows[y][x], x, y, time);
-    }
-  }
+  // ground base (so loading frames aren't black)
+  ctx.fillStyle = '#5a7a42';
+  ctx.fillRect(0, 0, owCanvas.width, owCanvas.height);
 
-  // building icons above doors
+  // grass under buildings/signs so they sit in the meadow
+  const grass = terrainImg('T');
   for (let y = 0; y < MAP_H; y++) {
     for (let x = 0; x < MAP_W; x++) {
       const t = map.rows[y][x];
-      if (DOOR_INFO[t]) {
-        ctx.font = '20px serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(DOOR_INFO[t][1], x * TILE + TILE / 2, (y - 1) * TILE + 24);
+      const im = terrainImg(t);
+      if ('LHMGlhmgS'.includes(t) && ready(grass)) {
+        ctx.fillStyle = '#6f9a4a';
+        ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
+      }
+      if (ready(im)) ctx.drawImage(im, x * TILE, y * TILE, TILE, TILE);
+    }
+  }
+
+  // roof plaques above doors
+  for (let y = 0; y < MAP_H; y++) {
+    for (let x = 0; x < MAP_W; x++) {
+      const t = map.rows[y][x];
+      if ('lhmg'.includes(t)) {
+        const im = getImg('r' + t, ART.roof[t]);
+        if (ready(im)) ctx.drawImage(im, x * TILE + 4, (y - 1) * TILE + 2, TILE - 8, TILE - 8);
       }
     }
   }
 
   // NPCs
-  ctx.font = '24px serif';
-  ctx.textAlign = 'center';
   for (const n of map.npcs) {
     const p = n.pos();
-    ctx.fillText(n.sprite, p.x * TILE + TILE / 2, p.y * TILE + 25);
+    const im = getImg('c' + (NPC_ART[n.id] || 'kid'), ART.characters[NPC_ART[n.id] || 'kid']);
+    if (ready(im)) ctx.drawImage(im, p.x * TILE - 4, p.y * TILE - 12, TILE + 8, TILE + 10);
     if (n.trainer && !G.flags['beat_' + n.trainer.id]) {
-      ctx.font = '11px sans-serif';
-      ctx.fillText('❗', p.x * TILE + TILE / 2, p.y * TILE - 2);
-      ctx.font = '24px serif';
+      const t = performance.now();
+      ctx.fillStyle = '#d8a430';
+      ctx.strokeStyle = '#5a3f16';
+      ctx.lineWidth = 1.5;
+      ctx.font = 'bold 16px Georgia';
+      ctx.textAlign = 'center';
+      const yb = p.y * TILE - 8 + Math.sin(t / 200) * 2;
+      ctx.strokeText('!', p.x * TILE + TILE / 2, yb);
+      ctx.fillText('!', p.x * TILE + TILE / 2, yb);
     }
   }
 
   // player
   const bob = player.moving ? Math.sin(player.anim * Math.PI) * 2 : 0;
-  ctx.save();
-  ctx.translate(player.px + TILE / 2, player.py + 25 - bob);
-  if (player.dir === 'left') ctx.scale(-1, 1);
-  ctx.font = '26px serif';
-  ctx.fillText('🧑', 0, 0);
-  ctx.restore();
+  const pim = getImg('cplayer', ART.characters.player);
+  if (ready(pim)) {
+    ctx.save();
+    ctx.translate(player.px + TILE / 2, player.py + TILE / 2 - bob);
+    if (player.dir === 'left') ctx.scale(-1, 1);
+    ctx.drawImage(pim, -(TILE + 8) / 2, -(TILE + 14) / 2 - 4, TILE + 8, TILE + 12);
+    ctx.restore();
+  }
 
   // facing indicator
   const [fdx, fdy] = DIRS[player.dir];
-  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.fillStyle = 'rgba(248,236,200,0.9)';
   ctx.beginPath();
-  const cx = player.px + TILE / 2 + fdx * 13, cy = player.py + TILE / 2 + fdy * 13 + 4;
-  ctx.arc(cx, cy, 2.5, 0, Math.PI * 2);
+  ctx.arc(player.px + TILE / 2 + fdx * 14, player.py + TILE / 2 + fdy * 14 + 2, 2.6, 0, Math.PI * 2);
   ctx.fill();
-}
-
-function drawTile(ctx, t, x, y, time) {
-  const px = x * TILE, py = y * TILE;
-  // base
-  ctx.fillStyle = '#90c868';
-  ctx.fillRect(px, py, TILE, TILE);
-
-  switch (t) {
-    case '.':
-      ctx.fillStyle = '#e0cf96';
-      ctx.fillRect(px, py, TILE, TILE);
-      ctx.fillStyle = 'rgba(0,0,0,0.04)';
-      if ((x + y) % 2) ctx.fillRect(px, py, TILE, TILE);
-      break;
-    case ',': {
-      const v = (x * 7 + y * 13) % 4;
-      ctx.font = '13px serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(['🌼', '🌸', '🌷', '🍀'][v], px + TILE / 2, py + 21);
-      break;
-    }
-    case 'T':
-      ctx.fillStyle = '#58a048';
-      ctx.fillRect(px, py, TILE, TILE);
-      ctx.font = '22px serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('🌿', px + TILE / 2, py + 25);
-      break;
-    case '#':
-      ctx.fillStyle = '#78b058';
-      ctx.fillRect(px, py, TILE, TILE);
-      ctx.font = '26px serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('🌲', px + TILE / 2, py + 26);
-      break;
-    case 'W': {
-      const phase = Math.sin(time / 600 + x * 1.3 + y * 0.9);
-      ctx.fillStyle = phase > 0 ? '#5090e0' : '#4884d4';
-      ctx.fillRect(px, py, TILE, TILE);
-      ctx.strokeStyle = 'rgba(255,255,255,0.35)';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(px + 5, py + 16 + phase * 3);
-      ctx.quadraticCurveTo(px + 16, py + 11 + phase * 3, px + 27, py + 16 + phase * 3);
-      ctx.stroke();
-      break;
-    }
-    case 'S':
-      ctx.fillStyle = '#e0cf96';
-      ctx.fillRect(px, py, TILE, TILE);
-      ctx.fillStyle = '#8a6840';
-      ctx.fillRect(px + 14, py + 14, 4, 14);
-      ctx.fillStyle = '#b08850';
-      ctx.fillRect(px + 5, py + 5, 22, 12);
-      ctx.strokeStyle = '#684c28';
-      ctx.strokeRect(px + 5, py + 5, 22, 12);
-      break;
-    default: {
-      // building walls & doors
-      const colors = { L: '#9080b8', H: '#e87878', M: '#6898e0', G: '#e8a040' };
-      const wall = t.toUpperCase();
-      if (colors[wall]) {
-        ctx.fillStyle = colors[wall];
-        ctx.fillRect(px, py, TILE, TILE);
-        ctx.fillStyle = 'rgba(255,255,255,0.18)';
-        ctx.fillRect(px, py, TILE, 6);
-        ctx.strokeStyle = 'rgba(0,0,0,0.25)';
-        ctx.strokeRect(px + 0.5, py + 0.5, TILE - 1, TILE - 1);
-        if (DOOR_INFO[t]) {
-          ctx.fillStyle = '#483828';
-          ctx.fillRect(px + 7, py + 8, 18, 24);
-          ctx.fillStyle = '#d8c890';
-          ctx.fillRect(px + 19, py + 19, 3, 3);
-        }
-      }
-    }
-  }
 }
 
 /* =====================================================
@@ -1700,10 +1359,10 @@ function hpColor(ratio) {
 
 function renderSide(side) {
   const mon = side === 'player' ? playerMon() : enemyMon();
-  $(`${side}-name`).textContent = mon.sprite + ' ' + mon.name;
+  $(`${side}-name`).textContent = mon.name;
   $(`${side}-level`).textContent = 'Lv' + mon.level;
   const sp = $(`${side}-sprite`);
-  sp.textContent = mon.sprite;
+  sp.innerHTML = ART.monsters[mon.species] || '';
   sp.classList.remove('fainted');
   sp.style.transition = '';
   sp.style.transform = '';
@@ -1769,6 +1428,7 @@ async function startBattle(opts) {
   battle.busy = true;
   held.clear();
 
+  AUDIO.playBattle();
   const flash = $('battle-flash');
   flash.classList.add('flashing');
   await sleep(550);
@@ -1781,7 +1441,7 @@ async function startBattle(opts) {
   renderSide('enemy');
 
   if (battle.kind === 'wild') {
-    await say(`A wild ${enemyMon().name} appeared! ${enemyMon().sprite}`);
+    await say(`A wild ${enemyMon().name} appeared!`);
   } else {
     await say(`${battle.trainer.title} wants to battle!`);
     await say(`${battle.trainer.title} sent out ${enemyMon().name}!`);
@@ -1795,6 +1455,7 @@ async function endBattle(result) {
   battle.busy = false;
   $('battle-screen').style.display = 'none';
   $('overworld').style.display = 'block';
+  AUDIO.playWorld();
   updateHUD();
   saveGame();
 
@@ -1809,7 +1470,7 @@ async function endBattle(result) {
     const msgs = [`${tr.title}: ${tr.win}`, `You received $${tr.reward} for winning!`];
     if (tr.gymBadge) {
       G.badges.push(tr.gymBadge);
-      msgs.push(`You earned the ${tr.gymBadge}! ${tr.gymBadge === 'Blaze Badge' ? '🔥' : '🌊'}`);
+      msgs.push(`You earned the ${tr.gymBadge}!`);
     }
     updateHUD();
     saveGame();
@@ -1831,12 +1492,21 @@ function showMainMenu() {
   const grid = $('menu-grid');
   grid.innerHTML = '';
 
-  addBtn(grid, '⚔ FIGHT', null, showMoveMenu);
-  addBtn(grid, '🎒 BAG', null, showBagMenu);
+  addBtn(grid, ICON.fight + ' FIGHT', null, showMoveMenu);
+  addBtn(grid, ICON.bag + ' BAG', null, showBagMenu);
   const canSwitch = G.party.some((m, i) => m.hp > 0 && i !== battle.pIdx);
-  addBtn(grid, '🔄 SWITCH', null, () => showSwitchMenu(false), !canSwitch);
-  if (battle.kind === 'wild') addBtn(grid, '🏃 RUN', null, tryRun);
+  addBtn(grid, ICON.swap + ' SWITCH', null, () => showSwitchMenu(false), !canSwitch);
+  if (battle.kind === 'wild') addBtn(grid, ICON.run + ' RUN', null, tryRun);
 }
+
+const ICON = {
+  fight: '<svg width="14" height="14" viewBox="0 0 16 16" style="vertical-align:-2px"><path d="M2 14 L11 5 M9 3 L13 7 L11 9 L7 5Z" stroke="#8a3a1a" stroke-width="1.6" fill="#caa24a"/><circle cx="3" cy="13" r="1.6" fill="#8a6a22"/></svg>',
+  bag: '<svg width="14" height="14" viewBox="0 0 16 16" style="vertical-align:-2px"><rect x="3" y="6" width="10" height="8" rx="2" fill="#9a4f28" stroke="#5a3f16"/><path d="M5 6 a3 3 0 0 1 6 0" fill="none" stroke="#5a3f16" stroke-width="1.4"/></svg>',
+  swap: '<svg width="14" height="14" viewBox="0 0 16 16" style="vertical-align:-2px"><path d="M3 6 h7 l-2 -2 M13 10 H6 l2 2" fill="none" stroke="#5a3f16" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  run: '<svg width="14" height="14" viewBox="0 0 16 16" style="vertical-align:-2px"><circle cx="9" cy="3.5" r="1.8" fill="#5a3f16"/><path d="M8 6 L5 9 M8 6 L12 8 M8 6 L7 11 L4 14 M7 11 L11 13" stroke="#5a3f16" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>',
+  orb: '<svg width="14" height="14" viewBox="0 0 16 16" style="vertical-align:-2px"><circle cx="8" cy="8" r="6.5" fill="#cfd6dc" stroke="#5a3f16" stroke-width="1.4"/><path d="M1.5 8 h13" stroke="#5a3f16" stroke-width="1.2"/><circle cx="8" cy="8" r="2" fill="#b06a3b" stroke="#5a3f16"/></svg>',
+  potion: '<svg width="14" height="14" viewBox="0 0 16 16" style="vertical-align:-2px"><rect x="5" y="6" width="6" height="8" rx="2" fill="#7fd0e0" stroke="#5a3f16" stroke-width="1.2"/><rect x="6" y="3" width="4" height="3" fill="#9a4f28"/></svg>'
+};
 
 function addBtn(grid, label, sub, fn, disabled, borderColor) {
   const btn = document.createElement('button');
@@ -1844,7 +1514,7 @@ function addBtn(grid, label, sub, fn, disabled, borderColor) {
   btn.innerHTML = label + (sub ? `<span class="sub">${sub}</span>` : '');
   if (borderColor) btn.style.borderColor = borderColor;
   btn.disabled = !!disabled;
-  btn.addEventListener('click', fn);
+  btn.addEventListener('click', (e) => { AUDIO.sfx.confirm(); fn(e); });
   grid.appendChild(btn);
   return btn;
 }
@@ -1870,10 +1540,10 @@ function showBagMenu() {
   $('menu-prompt').textContent = 'Items:';
   const grid = $('menu-grid');
   grid.innerHTML = '';
-  addBtn(grid, `⚪ Capture Orb ×${G.items.orb}`,
+  addBtn(grid, ICON.orb + ` Capture Orb ×${G.items.orb}`,
     battle.kind === 'wild' ? 'Throw to catch the wild monster' : 'Can\'t use in trainer battles',
     tryCatch, G.items.orb <= 0 || battle.kind !== 'wild');
-  addBtn(grid, `🧪 Potion ×${G.items.potion}`, 'Restores 50% HP',
+  addBtn(grid, ICON.potion + ` Potion ×${G.items.potion}`, 'Restores 50% HP',
     usePotion, G.items.potion <= 0 || playerMon().hp >= playerMon().maxHp);
   addBtn(grid, '↩ BACK', null, showMainMenu).classList.add('back-btn');
 }
@@ -1887,7 +1557,7 @@ function showSwitchMenu(forced) {
 
   G.party.forEach((m, i) => {
     if (i === battle.pIdx && !forced) return;
-    addBtn(grid, `${m.sprite} ${m.name}`,
+    addBtn(grid, m.name,
       `Lv${m.level} · ${m.type} · HP ${Math.max(0, m.hp)}/${m.maxHp}`,
       () => doSwitch(i, forced), m.hp <= 0 || i === battle.pIdx);
   });
@@ -1934,6 +1604,7 @@ async function executeMove(side, move) {
     return false;
   }
 
+  AUDIO.sfx.move(m.type);
   await animateAttack(m.type, side, m.power);
 
   const { dmg, eff, crit } = calcDamage(attacker, defender, move);
@@ -1942,7 +1613,8 @@ async function executeMove(side, move) {
     defSprite.classList.add('hit');
     defSprite.classList.add('flash');
     setTimeout(() => { defSprite.classList.remove('hit'); defSprite.classList.remove('flash'); }, 500);
-    if (crit || eff >= 2) arenaQuake();
+    if (crit || eff >= 2) { arenaQuake(); AUDIO.sfx.superhit(); }
+    else AUDIO.sfx.hit();
   }
   defender.hp -= dmg;
   updateHp(defSide);
@@ -1954,6 +1626,7 @@ async function executeMove(side, move) {
 
   if (defender.hp <= 0) {
     defender.hp = 0;
+    AUDIO.sfx.faint();
     $(`${defSide}-sprite`).classList.add('fainted');
     renderDots(defSide);
     const defPrefix = defSide === 'enemy' ? (battle.kind === 'wild' ? 'Wild ' : 'Enemy ') : '';
@@ -2022,6 +1695,7 @@ async function awardXp(foe) {
     applyLevelUp(mon);
     renderSide('player');
     fxResize();
+    AUDIO.sfx.levelup();
     burst(spriteCenter('player'), { count: 16, colors: ['#f8d030', '#fff', '#f8a030'], speed: [1, 3.5], life: [20, 35] });
     await say(`${mon.name} grew to level ${mon.level}!`);
   }
@@ -2074,6 +1748,7 @@ async function tryRun() {
   $('menu-box').style.display = 'none';
   const chance = clamp(0.5 + (playerMon().spd - enemyMon().spd) / 200, 0.25, 0.95);
   if (Math.random() < chance) {
+    AUDIO.sfx.flee();
     await say('You got away safely!');
     await endBattle('ran');
     return;
@@ -2097,6 +1772,7 @@ async function tryCatch() {
   updateHUD();
 
   const target = enemyMon();
+  AUDIO.sfx.throw();
   await say(`You threw a Capture Orb at ${target.name}!`);
 
   fxResize();
@@ -2131,6 +1807,7 @@ async function tryCatch() {
 
   for (let i = 0; i < shakes; i++) {
     await sleep(380);
+    AUDIO.sfx.select();
     await tweenFrames(420, k => { fx.ball.rot = Math.sin(k * Math.PI * 2) * 0.45; });
   }
   await sleep(420);
@@ -2139,7 +1816,8 @@ async function tryCatch() {
     burst({ x: fx.ball.x, y: fx.ball.y }, { count: 14, colors: ['#f8d030', '#fff'], speed: [1, 3], life: [18, 30] });
     await sleep(350);
     fx.ball = null;
-    await say(`Gotcha! ${target.name} was caught! ${target.sprite}`);
+    AUDIO.sfx.catch();
+    await say(`Gotcha! ${target.name} was caught!`);
     G.party.push(target);
     saveGame();
     await say(`${target.name} joined your team!`);
@@ -2154,6 +1832,7 @@ async function tryCatch() {
   enemySprite.style.opacity = '1';
   await sleep(300);
   enemySprite.style.transition = '';
+  AUDIO.sfx.fizzle();
   await say(`Oh no! ${target.name} broke free!`);
   if (await enemyAttacks()) return;
   showMainMenu();
@@ -2171,7 +1850,7 @@ function openParty() {
     card.className = 'party-card' + (i === 0 ? ' lead' : '');
     const ratio = Math.max(0, m.hp / m.maxHp);
     card.innerHTML = `
-      <span class="psprite">${m.sprite}</span>
+      <span class="psprite">${ART.monsters[m.species] || ''}</span>
       <div class="pinfo">
         <b>${m.name}</b> Lv${m.level} ${i === 0 ? '★ lead' : ''}
         <span class="type-badge" style="background:${TYPE_COLORS[m.type]}">${m.type}</span><br>
@@ -2233,7 +1912,31 @@ window.addEventListener('blur', () => held.clear());
 $('champ-continue').addEventListener('click', () => { $('champion-overlay').style.display = 'none'; });
 $('champ-newgame').addEventListener('click', () => { localStorage.removeItem(SAVE_KEY); location.reload(); });
 
+// ---- music / sound toggle ----
+let musicOn = true;
+try { musicOn = localStorage.getItem('gearbound-music') !== 'off'; } catch (e) {}
+const musicBtn = $('music-btn');
+function reflectMusicBtn() { musicBtn.classList.toggle('muted', !musicOn); }
+reflectMusicBtn();
+musicBtn.addEventListener('click', () => {
+  musicOn = !musicOn;
+  try { localStorage.setItem('gearbound-music', musicOn ? 'on' : 'off'); } catch (e) {}
+  AUDIO.setEnabled(musicOn);
+  if (musicOn) { AUDIO.resume(); battle.active ? AUDIO.playBattle() : AUDIO.playWorld(); }
+  reflectMusicBtn();
+});
+// resume the audio context on the first user gesture (autoplay policy)
+function firstGesture() {
+  AUDIO.resume();
+  AUDIO.setEnabled(musicOn);
+  window.removeEventListener('pointerdown', firstGesture);
+  window.removeEventListener('keydown', firstGesture);
+}
+window.addEventListener('pointerdown', firstGesture);
+window.addEventListener('keydown', firstGesture);
+
 function boot() {
+  preloadArt();
   const hasSave = (() => {
     try { return !!localStorage.getItem(SAVE_KEY); } catch (e) { return false; }
   })();
@@ -2255,11 +1958,14 @@ async function startWorld(isNew) {
   $('title-overlay').style.display = 'none';
   $('overworld').style.display = 'block';
   updateHUD();
+  AUDIO.resume();
+  AUDIO.setEnabled(musicOn);
+  AUDIO.playWorld();
   requestAnimationFrame(gameLoop);
   if (isNew) {
     await owSay([
       'Welcome to the world of monsters!',
-      'Visit Prof. Willow\'s LAB (the building with the 🔬) to get your first partner.',
+      'Visit Prof. Willow\'s LAB (the building with the microscope plaque) to get your first partner.',
       'Move with WASD or the arrow keys. Press E to talk and interact!'
     ]);
   }
