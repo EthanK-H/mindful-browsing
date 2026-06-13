@@ -292,6 +292,101 @@ M.Snapjaw = wrap(`
   ${gear(96, 80, 6, 8, '#9aa6b0', 0)}
 `);
 
+// ---- EVOLVED FORMS (larger, more ornate automatons) ----------
+
+// Cinderwulf — Embercub's evolution: a great brass wolf wreathed in fire
+M.Cinderwulf = wrap(`
+  ${steam(96, 22)} ${steam(20, 22)}
+  <path d="M24 96 Q4 88 12 66 Q2 58 12 50 L26 60 Z" fill="url(#copper)" stroke="#5a3f16" stroke-width="1.5"/>
+  <g fill="#f0742a" opacity="0.85">
+    <path d="M30 40 q-6 -20 4 -28 q4 14 2 26Z"/>
+    <path d="M90 40 q6 -20 -4 -28 q-4 14 -2 26Z"/></g>
+  <ellipse cx="60" cy="78" rx="36" ry="26" fill="url(#brass)" stroke="#5a3f16" stroke-width="2.5"/>
+  <path d="M34 50 L24 24 L46 42 Z" fill="url(#copper)" stroke="#5a3f16" stroke-width="2"/>
+  <path d="M86 50 L96 24 L74 42 Z" fill="url(#copper)" stroke="#5a3f16" stroke-width="2"/>
+  <circle cx="60" cy="56" r="28" fill="url(#brass)" stroke="#5a3f16" stroke-width="2.5"/>
+  <path d="M40 62 Q60 84 80 62" fill="none" stroke="#9a4f28" stroke-width="3" stroke-linecap="round"/>
+  ${glassGauge(48, 52, 8, '#f0742a')}
+  ${glassGauge(72, 52, 8, '#f0742a')}
+  <polygon points="56,66 64,66 60,74" fill="#3a2c1e"/>
+  <path d="M48 78 l-4 6 m8 -4 l-2 7 m20 -9 l4 6 m-12 -2 l2 7" stroke="#9a4f28" stroke-width="2" stroke-linecap="round"/>
+  ${rivet(36, 76, 2.6)} ${rivet(84, 76, 2.6)} ${rivet(60, 92, 2.6)}
+  ${gear(96, 86, 11, 9, '#b07a32', 12)} ${gear(24, 86, 9, 8, '#b07a32', 30)}
+`);
+
+// Leviadon — Aquafin's evolution: a leviathan diving engine
+M.Leviadon = wrap(`
+  <path d="M100 44 Q118 36 110 60 Q104 52 94 56 Z" fill="url(#steel)" stroke="#5a3f16" stroke-width="2"/>
+  <path d="M16 82 Q2 72 16 60 Q40 40 78 46 Q112 52 108 78 Q100 102 56 100 Q28 98 16 82 Z"
+        fill="url(#steel)" stroke="#5a3f16" stroke-width="2.5"/>
+  <path d="M44 50 L36 28 L58 46 Z" fill="#6e7b86" stroke="#5a3f16" stroke-width="2"/>
+  <path d="M60 44 L58 24 L70 42 Z" fill="#6e7b86" stroke="#5a3f16" stroke-width="1.5"/>
+  <path d="M26 84 Q14 98 32 96 Q24 88 30 82Z" fill="#6e7b86" stroke="#5a3f16" stroke-width="1.5"/>
+  ${glassGauge(82, 62, 9, '#5fb6e0')}
+  ${glassGauge(58, 70, 6, '#5fb6e0')}
+  <path d="M70 84 Q86 88 96 80" fill="none" stroke="#5a3f16" stroke-width="2.5"/>
+  <path d="M40 70 L46 64 L52 70 L58 64 L64 70" fill="none" stroke="#cfd6dc" stroke-width="2"/>
+  ${rivet(40, 60, 2.5)} ${rivet(56, 56, 2.5)} ${rivet(74, 84, 2.5)} ${rivet(50, 86, 2.5)}
+  <g opacity="0.8" fill="#bfe3f5"><circle cx="106" cy="34" r="3"/><circle cx="112" cy="24" r="2"/></g>
+  ${gear(28, 74, 9, 8, '#9aa6b0', 0)}
+`);
+
+// Thornguard — Thornling's evolution: a towering garden golem
+M.Thornguard = wrap(`
+  <g fill="#5aa83e" stroke="#2f5e22" stroke-width="1.2">
+    <path d="M34 50 q-10 -20 6 -26 q0 16 -6 26"/>
+    <path d="M54 42 q-4 -24 12 -18 q-4 16 -12 18"/>
+    <path d="M84 50 q10 -18 18 -8 q-10 12 -18 8"/>
+    <path d="M70 44 q6 -20 16 -12 q-8 14 -16 12"/></g>
+  <path d="M16 92 Q2 90 10 76 Q16 70 24 76 Z" fill="url(#copper)" stroke="#5a3f16" stroke-width="2"/>
+  <ellipse cx="60" cy="80" rx="40" ry="24" fill="url(#brass)" stroke="#5a3f16" stroke-width="2.5"/>
+  <circle cx="86" cy="58" r="22" fill="url(#brass)" stroke="#5a3f16" stroke-width="2.5"/>
+  <circle cx="36" cy="62" r="14" fill="url(#brass)" stroke="#5a3f16" stroke-width="2"/>
+  ${glassGauge(92, 54, 7, '#6cc24a')}
+  ${glassGauge(80, 60, 5, '#6cc24a')}
+  <path d="M78 68 q10 5 18 -1" fill="none" stroke="#9a4f28" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M40 92 l-6 8 M58 94 l0 9 M78 92 l6 8" stroke="#5a3f16" stroke-width="4" stroke-linecap="round"/>
+  ${rivet(48, 82, 2.6)} ${rivet(66, 86, 2.6)} ${rivet(36, 62, 2.4)}
+  ${gear(40, 78, 8, 8, '#b07a32', 20)}
+`);
+
+// Voltabane — Voltikit's evolution: a tesla-coil panther
+M.Voltabane = wrap(`
+  ${steam(24, 34)}
+  <path d="M88 94 Q106 90 98 70 Q94 82 84 82 Z" fill="url(#copper)" stroke="#5a3f16" stroke-width="2"/>
+  <ellipse cx="56" cy="80" rx="32" ry="24" fill="url(#brass)" stroke="#5a3f16" stroke-width="2.5"/>
+  <path d="M38 50 L30 26 L52 46 Z" fill="url(#copper)" stroke="#5a3f16" stroke-width="2"/>
+  <path d="M76 50 L84 26 L62 46 Z" fill="url(#copper)" stroke="#5a3f16" stroke-width="2"/>
+  <circle cx="30" cy="26" r="4" fill="#f8d84a"/><circle cx="84" cy="26" r="4" fill="#f8d84a"/>
+  <circle cx="56" cy="56" r="26" fill="url(#brass)" stroke="#5a3f16" stroke-width="2.5"/>
+  ${glassGauge(46, 52, 7.5, '#f4d23a')}
+  ${glassGauge(66, 52, 7.5, '#f4d23a')}
+  <path d="M48 66 l8 5 l8 -5" fill="none" stroke="#9a4f28" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M56 8 l-7 14 l8 -3 l-5 13" fill="none" stroke="#f8d84a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M22 60 l-8 -4 m76 4 l8 -4" stroke="#f8d84a" stroke-width="2" stroke-linecap="round"/>
+  ${rivet(38, 78, 2.6)} ${rivet(74, 78, 2.6)} ${rivet(56, 90, 2.6)}
+  ${gear(90, 88, 9, 8, '#b07a32', 5)}
+`);
+
+// Granitox — Bouldox's evolution: a fortress beast
+M.Granitox = wrap(`
+  <ellipse cx="60" cy="82" rx="44" ry="26" fill="url(#steel)" stroke="#5a3f16" stroke-width="2.5"/>
+  <rect x="26" y="46" width="68" height="36" rx="8" fill="url(#steel)" stroke="#5a3f16" stroke-width="2.5"/>
+  <rect x="30" y="40" width="12" height="10" fill="#9aa6b0" stroke="#5a3f16"/>
+  <rect x="54" y="36" width="12" height="14" fill="#9aa6b0" stroke="#5a3f16"/>
+  <rect x="78" y="40" width="12" height="10" fill="#9aa6b0" stroke="#5a3f16"/>
+  <path d="M30 60 q-12 6 -4 18" fill="none" stroke="#cfd6dc" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M90 60 q12 6 4 18" fill="none" stroke="#cfd6dc" stroke-width="3.5" stroke-linecap="round"/>
+  ${glassGauge(46, 60, 7, '#caa24a')}
+  ${glassGauge(74, 60, 7, '#caa24a')}
+  <rect x="50" y="70" width="20" height="8" rx="2" fill="#3a2c1e"/>
+  <rect x="53" y="71.5" width="3" height="5" fill="#cfd6dc"/><rect x="58" y="71.5" width="3" height="5" fill="#cfd6dc"/><rect x="63" y="71.5" width="3" height="5" fill="#cfd6dc"/>
+  ${rivet(34, 50, 2.6)} ${rivet(60, 48, 2.6)} ${rivet(86, 50, 2.6)} ${rivet(34, 78, 2.6)} ${rivet(86, 78, 2.6)}
+  <rect x="38" y="86" width="11" height="14" rx="2" fill="#6e7b86" stroke="#5a3f16"/>
+  <rect x="71" y="86" width="11" height="14" rx="2" fill="#6e7b86" stroke="#5a3f16"/>
+  ${gear(60, 32, 13, 10, '#9aa6b0', 0)}
+`);
+
 // ============================================================
 // CHARACTERS (overworld + battle UI helpers)
 // ============================================================
@@ -331,6 +426,8 @@ const C = {
   clerk: person('#3a8a6a', '#2a6a4a', `<path d="M44 40 q16 -14 32 0" fill="#5a3f16"/>`),
   cinda: person('#b0402a', '#8a2f1a', TOPHAT.replace(/#241a12/g, '#7a1f10').replace('#8a6a22', '#f0a030')),
   marlow: person('#2a5a8a', '#1a3f6a', TOPHAT.replace(/#241a12/g, '#103a5a').replace('#8a6a22', '#5fb6e0')),
+  coach: person('#3a8a6a', '#246a4a', `<path d="M44 40 q16 -16 32 0Z" fill="#244a3a"/><rect x="58" y="22" width="20" height="3" rx="1" fill="#244a3a"/>`,
+    `<rect x="40" y="70" width="40" height="5" rx="2" fill="#e2b04a"/>`),
 };
 
 // ============================================================
@@ -367,11 +464,37 @@ const T = {
     <g stroke="#7fd0e0" stroke-width="1.3" fill="none" opacity="0.7" stroke-linecap="round">
     <path d="M3 9 q5 -3 10 0 t10 0"/><path d="M5 19 q5 -3 10 0 t10 0"/><path d="M2 27 q5 -3 10 0 t10 0"/></g>
     <circle cx="24" cy="6" r="1.3" fill="#bfe8f0" opacity="0.8"/></svg>`,
+  // ---- interior tiles ----
+  floor: `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <rect width="32" height="32" fill="#caa878"/>
+    <g stroke="#b08a52" stroke-width="1"><path d="M0 0 V32 M16 0 V32 M8 0 V8 M24 0 V8 M8 16 V24 M24 16 V24"/><path d="M0 8 H32 M0 16 H32 M0 24 H32"/></g>
+    <g fill="#dcc096" opacity="0.5"><rect x="1" y="1" width="6" height="6"/><rect x="17" y="9" width="6" height="6"/><rect x="9" y="25" width="6" height="6"/></g></svg>`,
+  mat: `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <rect width="32" height="32" fill="#caa878"/>
+    <rect x="4" y="6" width="24" height="20" rx="3" fill="#a04030" stroke="#6a2418" stroke-width="2"/>
+    <rect x="8" y="10" width="16" height="12" rx="2" fill="none" stroke="#e0b060" stroke-width="1.5"/>
+    <path d="M16 10 V22 M8 16 H24" stroke="#e0b060" stroke-width="1"/></svg>`,
+  wall: `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <rect width="32" height="32" fill="#6a5238"/>
+    <rect width="32" height="16" fill="#7a6244"/>
+    <g stroke="#4a3826" stroke-width="1.4"><path d="M0 16 H32 M0 32 H32 M10 0 V16 M22 16 V32 M2 16 V32 M30 0 V16"/></g>
+    <g fill="#9a7a4a"><circle cx="6" cy="8" r="1.4"/><circle cx="26" cy="8" r="1.4"/></g></svg>`,
+  counter: `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <rect width="32" height="32" fill="#caa878"/>
+    <rect x="0" y="8" width="32" height="18" fill="#8a5a2a" stroke="#5a3f16" stroke-width="2"/>
+    <rect x="0" y="8" width="32" height="6" fill="#a87a3a"/>
+    <g fill="#e2b04a"><circle cx="6" cy="20" r="1.6"/><circle cx="26" cy="20" r="1.6"/></g>
+    ${gear(16, 19, 5, 8, '#b07a32', 0)}</svg>`,
+  rug: `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <rect width="32" height="32" fill="#caa878"/>
+    <rect x="2" y="2" width="28" height="28" rx="2" fill="#3a6a8a" stroke="#244a6a" stroke-width="2"/>
+    <rect x="7" y="7" width="18" height="18" fill="none" stroke="#7fb0d0" stroke-width="1.5"/>
+    ${gear(16, 16, 6, 9, '#5a8aaa', 0)}</svg>`,
 };
 
 // Buildings: walls colored per kind, with brass trim & rivets
 function buildingWall(kind, isDoor) {
-  const cols = { L: ['#8a7ab0', '#6a5a90'], H: ['#c87a7a', '#a85a5a'], M: ['#6a8ac0', '#4a6aa0'], G: ['#caa24a', '#a07a2a'] };
+  const cols = { L: ['#8a7ab0', '#6a5a90'], H: ['#c87a7a', '#a85a5a'], M: ['#6a8ac0', '#4a6aa0'], G: ['#caa24a', '#a07a2a'], A: ['#5aa890', '#3a8a6a'] };
   const c = cols[kind] || cols.G;
   let s = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
     <rect width="32" height="32" fill="${c[1]}"/>
@@ -395,6 +518,7 @@ const ROOF = {
   h: `<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="11" fill="#f0e0e0" stroke="#5a3f16" stroke-width="2"/><rect x="14" y="9" width="4" height="14" fill="#c0392b"/><rect x="9" y="14" width="14" height="4" fill="#c0392b"/></svg>`,
   m: `<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="11" fill="#cae0a0" stroke="#5a3f16" stroke-width="2"/><path d="M9 12 h14 l-2 9 h-10Z" fill="#6a8a3a" stroke="#3a5e22"/><path d="M11 12 v-2 a5 5 0 0 1 10 0 v2" fill="none" stroke="#3a5e22" stroke-width="1.5"/></svg>`,
   g: `<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="11" fill="#f0d28a" stroke="#5a3f16" stroke-width="2"/><polygon points="16,7 19,13 25,13 20,17 22,24 16,20 10,24 12,17 7,13 13,13" fill="#c08a2a" stroke="#5a3f16" stroke-width="0.8"/></svg>`,
+  a: `<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="11" fill="#bfe8d8" stroke="#5a3f16" stroke-width="2"/><rect x="8" y="14" width="16" height="4" rx="1" fill="#5a3f16"/><rect x="6" y="11" width="4" height="10" rx="1" fill="#3a8a6a" stroke="#244a3a"/><rect x="22" y="11" width="4" height="10" rx="1" fill="#3a8a6a" stroke="#244a3a"/></svg>`,
 };
 
 const SIGN = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
