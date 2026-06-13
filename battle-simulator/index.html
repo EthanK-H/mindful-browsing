@@ -157,6 +157,7 @@
 <button id="music-btn" title="Toggle music & sound">♪</button>
 
 <script src="sprites.js"></script>
+<script src="monster-art.js"></script>
 <script src="audio.js"></script>
 <script>
 'use strict';
@@ -314,6 +315,26 @@ const EVOLUTIONS = {
   Bouldox:   { to: 'Granitox',   lvl: 22 }
 };
 const evoOf = species => EVOLUTIONS[species] || null;
+
+// species -> Tuxemon sprite slug (open-source art; see CREDITS.md).
+// Evolution stages map to matching Tuxemon evolution families.
+const MON_SLUG = {
+  Embercub: 'agnite',    Cinderwulf: 'agnigon',   // Fire dragon line
+  Aquafin: 'dollfin',    Leviadon: 'bigfin',      // dolphin -> leviathan
+  Sproutle: 'anoleaf',   Thornling: 'viviphyta',  Thornguard: 'budaye',   // Wood line
+  Buzzlet: 'vivitrans',  Voltikit: 'viviteel',    Voltabane: 'vivitron',  // Metal line
+  Pebblit: 'grintot',    Bouldox: 'grintrock',    Granitox: 'grinflare',  // Earth line
+  Frostowl: 'conifrost', Galeon: 'av8r',          Spectross: 'l3gk0',
+  Fluffit: 'squabbit',   Scorchion: 'tikorch',    Snapjaw: 'sharpfin'
+};
+
+// Build an <img> for a monster sprite. side: 'front' (enemy/party) or 'back' (player in battle).
+function monsterImg(species, side) {
+  const slug = MON_SLUG[species];
+  const art = (window.MON_ART && slug) ? window.MON_ART[slug] : null;
+  if (!art) return ART.monsters[species] || '';   // SVG fallback
+  return `<img class="mon-img" alt="${species}" src="${art[side] || art.front}">`;
+}
 
 /* =====================================================
    DATA — WORLD MAPS (20 x 14 tiles)
@@ -1380,7 +1401,7 @@ async function animateAttack(moveName, moveType, side, power) {
   switch (moveName) {
     case 'Sky Dive': {
       const el = $(`${side}-sprite`);
-      const flip = side === 'player' ? 'scaleX(-1) ' : '';
+      const flip = '';  // sprites already face the correct way (front/back art)
       el.style.transition = 'transform 0.30s ease-in';
       el.style.transform = flip + 'translateY(-210px)';
       await sleep(320);
@@ -1630,7 +1651,7 @@ function renderSide(side) {
   $(`${side}-name`).textContent = mon.name;
   $(`${side}-level`).textContent = 'Lv' + mon.level;
   const sp = $(`${side}-sprite`);
-  sp.innerHTML = ART.monsters[mon.species] || '';
+  sp.innerHTML = monsterImg(mon.species, side === 'player' ? 'back' : 'front');
   sp.classList.remove('fainted');
   sp.style.transition = '';
   sp.style.transform = '';
@@ -1985,7 +2006,7 @@ async function doEvolution(mon) {
   const fromName = mon.name;
   const toName = evoOf(mon.species).to;
 
-  sp.innerHTML = ART.monsters[mon.species] || '';
+  sp.innerHTML = monsterImg(mon.species, 'front');
   sp.classList.remove('flash', 'pop');
   cap.textContent = `What? ${fromName} is evolving!`;
   overlay.style.display = 'flex';
@@ -2000,7 +2021,7 @@ async function doEvolution(mon) {
     sp.classList.add('flash');
     if (!swapped && i >= delays.length - 5) {
       evolveMon(mon);                 // becomes the new species mid-flash
-      sp.innerHTML = ART.monsters[mon.species] || '';
+      sp.innerHTML = monsterImg(mon.species, 'front');
       swapped = true;
     }
     AUDIO.sfx.evolvePing(i / delays.length);
@@ -2170,7 +2191,7 @@ function openParty() {
     card.className = 'party-card' + (i === 0 ? ' lead' : '');
     const ratio = Math.max(0, m.hp / m.maxHp);
     card.innerHTML = `
-      <span class="psprite">${ART.monsters[m.species] || ''}</span>
+      <span class="psprite">${monsterImg(m.species, 'front')}</span>
       <div class="pinfo">
         <b>${m.name}</b> Lv${m.level} ${i === 0 ? '★ lead' : ''}
         <span class="type-badge" style="background:${TYPE_COLORS[m.type]}">${m.type}</span><br>

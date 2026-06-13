@@ -18,8 +18,11 @@ self-contained file (no server, no build step, no network needed).
 
 ## Features
 
-- Hand-built **SVG art** for all 14 monsters, the player, NPCs, terrain
-  and buildings — no emoji, no image files
+- **Monster sprites** from the open-source [Tuxemon](https://github.com/Tuxemon/Tuxemon)
+  project (CC BY-SA 3.0 / GPL-3.0 — see `CREDITS.md`), with each species
+  and evolution stage mapped to a matching Tuxemon creature
+- Hand-built **SVG art** for the player, NPCs, terrain, buildings, UI and
+  the evolution cutscene — no emoji
 - Steampunk theme: brass/parchment UI, riveted buildings, an animated
   arena backdrop with rotating gears, a clockwork skyline and a drifting
   airship
@@ -46,7 +49,9 @@ The game is authored as separate files for easier editing:
 |------|---------|
 | `index.html` | markup + game logic |
 | `theme.css` | steampunk styling |
-| `sprites.js` | custom SVG art (`window.ART`) |
+| `sprites.js` | custom SVG art for world/UI (`window.ART`) |
+| `monster-art.js` | Tuxemon monster sprites as data URIs (`window.MON_ART`) |
+| `assets/monsters/` | the raw Tuxemon PNG sprites |
 | `audio.js` | procedural music + SFX (`window.AUDIO`) |
 
 `gearbound.html` is the distributable bundle. Rebuild it after editing any
