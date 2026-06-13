@@ -196,6 +196,16 @@ const SFX = {
       case 'Ghost': note(400, t, 0.4, 'sine', 0.16, sfxGain, 200); note(404, t, 0.4, 'sine', 0.14, sfxGain, 198); break;
       default: noiseHit(t, 0.1, 0.2, 800, sfxGain);
     }
+  },
+  // ---- evolution cues ----
+  evolveStart() { if (!ready()) return; const t = ctx.currentTime; note(N.C4, t, 1.0, 'triangle', 0.12, sfxGain, N.G4); },
+  evolvePing(k) { if (!ready()) return; const t = ctx.currentTime; const f = 440 * Math.pow(2, k * 1.5); note(f, t, 0.09, 'square', 0.14, sfxGain); },
+  evolveDone() {
+    if (!ready()) return;
+    const t = ctx.currentTime;
+    [N.C5, N.E5, N.G5, N.C5 * 2, N.E5 * 2].forEach((f, i) => note(f, t + i * 0.11, 0.4, 'triangle', 0.2, sfxGain));
+    note(N.C4, t, 1.4, 'sine', 0.16, sfxGain);
+    note(N.G4, t + 0.2, 1.2, 'sine', 0.12, sfxGain);
   }
 };
 
