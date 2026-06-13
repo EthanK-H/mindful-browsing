@@ -25,8 +25,16 @@ self-contained file (no server, no build step, no network needed).
   airship
 - **Procedural music** (an overworld waltz and a battle theme) plus
   sound effects, all synthesised live with the Web Audio API
-- Per-type particle **attack animations** (fire, water, lightning, ice,
-  rock, grass, wind, ghost) with screen flashes and arena shake
+- **Per-move attack animations** — signature effects for Sky Dive,
+  Quake Stomp, Hydro Jet, Flame Burst, Spark Bolt, Thunder Fang,
+  Shadow Rake, Leaf Blade, Blizzard Screech and Quick Hit, on top of the
+  per-type particle effects, with screen flashes and arena shake
+- **Walk-in buildings** — step through any door into a furnished
+  interior (lab, heal centre, mart, gym) and talk to the keeper inside
+- **Evolution** — eight evolution lines (including 3-stage chains) with a
+  full-screen evolution cutscene
+- **Training Academy** in Willowbrook (bottom-right) levels up your lead
+  for free, so you can test evolutions quickly
 - Type effectiveness, STAB, criticals, levels/XP, catching, a party of
   up to six, trainer and gym battles, a shop, heal centres, and autosave
 

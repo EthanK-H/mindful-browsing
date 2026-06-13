@@ -416,6 +416,60 @@ h1.title {
 }
 .party-card .mini-hp > div { height: 100%; border-radius: 3px; background: var(--hp-green); }
 
+/* evolution cutscene */
+#evo-overlay {
+  background: radial-gradient(ellipse at center, #1a1430 0%, #08060c 80%);
+  flex-direction: column;
+  z-index: 70;
+}
+.evo-stage {
+  position: relative;
+  width: 240px;
+  height: 240px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.evo-rays {
+  position: absolute;
+  inset: -40px;
+  background: conic-gradient(from 0deg,
+    rgba(248,236,200,0.0) 0deg, rgba(248,236,200,0.28) 12deg, rgba(248,236,200,0.0) 24deg,
+    rgba(248,236,200,0.0) 36deg, rgba(248,236,200,0.28) 48deg, rgba(248,236,200,0.0) 60deg,
+    rgba(248,236,200,0.0) 72deg, rgba(248,236,200,0.28) 84deg, rgba(248,236,200,0.0) 96deg,
+    rgba(248,236,200,0.0) 108deg, rgba(248,236,200,0.28) 120deg, rgba(248,236,200,0.0) 132deg,
+    rgba(248,236,200,0.0) 180deg, rgba(248,236,200,0.28) 192deg, rgba(248,236,200,0.0) 204deg,
+    rgba(248,236,200,0.0) 240deg, rgba(248,236,200,0.28) 252deg, rgba(248,236,200,0.0) 264deg,
+    rgba(248,236,200,0.0) 300deg, rgba(248,236,200,0.28) 312deg, rgba(248,236,200,0.0) 324deg);
+  opacity: 0;
+  transition: opacity 0.5s;
+  animation: spin 8s linear infinite;
+}
+#evo-overlay.bright .evo-rays { opacity: 1; }
+.evo-sprite {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  transition: filter 0.09s linear, transform 0.5s ease;
+  filter: drop-shadow(0 6px 10px rgba(0,0,0,0.6));
+}
+.evo-sprite svg { width: 100%; height: 100%; }
+.evo-sprite.flash {
+  filter: brightness(0) invert(1) drop-shadow(0 0 26px #fff) drop-shadow(0 0 12px #bfe8ff);
+}
+.evo-sprite.pop { transform: scale(1.18); }
+.evo-caption {
+  color: var(--brass-lt);
+  font-size: 20px;
+  font-variant: small-caps;
+  letter-spacing: 2px;
+  margin-top: 28px;
+  text-align: center;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+  min-height: 26px;
+  padding: 0 16px;
+}
+
 /* battle transition */
 #battle-flash {
   position: fixed;
@@ -616,6 +670,14 @@ h1.title {
     <button class="big-btn" id="champ-continue">KEEP PLAYING</button>
     <button class="big-btn secondary" id="champ-newgame">NEW GAME</button>
   </div>
+</div>
+
+<div class="overlay" id="evo-overlay">
+  <div class="evo-stage">
+    <div class="evo-rays" id="evo-rays"></div>
+    <div class="evo-sprite" id="evo-sprite"></div>
+  </div>
+  <div class="evo-caption" id="evo-caption"></div>
 </div>
 
 <div id="battle-flash"></div>
@@ -916,6 +978,101 @@ M.Snapjaw = wrap(`
   ${gear(96, 80, 6, 8, '#9aa6b0', 0)}
 `);
 
+// ---- EVOLVED FORMS (larger, more ornate automatons) ----------
+
+// Cinderwulf — Embercub's evolution: a great brass wolf wreathed in fire
+M.Cinderwulf = wrap(`
+  ${steam(96, 22)} ${steam(20, 22)}
+  <path d="M24 96 Q4 88 12 66 Q2 58 12 50 L26 60 Z" fill="url(#copper)" stroke="#5a3f16" stroke-width="1.5"/>
+  <g fill="#f0742a" opacity="0.85">
+    <path d="M30 40 q-6 -20 4 -28 q4 14 2 26Z"/>
+    <path d="M90 40 q6 -20 -4 -28 q-4 14 -2 26Z"/></g>
+  <ellipse cx="60" cy="78" rx="36" ry="26" fill="url(#brass)" stroke="#5a3f16" stroke-width="2.5"/>
+  <path d="M34 50 L24 24 L46 42 Z" fill="url(#copper)" stroke="#5a3f16" stroke-width="2"/>
+  <path d="M86 50 L96 24 L74 42 Z" fill="url(#copper)" stroke="#5a3f16" stroke-width="2"/>
+  <circle cx="60" cy="56" r="28" fill="url(#brass)" stroke="#5a3f16" stroke-width="2.5"/>
+  <path d="M40 62 Q60 84 80 62" fill="none" stroke="#9a4f28" stroke-width="3" stroke-linecap="round"/>
+  ${glassGauge(48, 52, 8, '#f0742a')}
+  ${glassGauge(72, 52, 8, '#f0742a')}
+  <polygon points="56,66 64,66 60,74" fill="#3a2c1e"/>
+  <path d="M48 78 l-4 6 m8 -4 l-2 7 m20 -9 l4 6 m-12 -2 l2 7" stroke="#9a4f28" stroke-width="2" stroke-linecap="round"/>
+  ${rivet(36, 76, 2.6)} ${rivet(84, 76, 2.6)} ${rivet(60, 92, 2.6)}
+  ${gear(96, 86, 11, 9, '#b07a32', 12)} ${gear(24, 86, 9, 8, '#b07a32', 30)}
+`);
+
+// Leviadon — Aquafin's evolution: a leviathan diving engine
+M.Leviadon = wrap(`
+  <path d="M100 44 Q118 36 110 60 Q104 52 94 56 Z" fill="url(#steel)" stroke="#5a3f16" stroke-width="2"/>
+  <path d="M16 82 Q2 72 16 60 Q40 40 78 46 Q112 52 108 78 Q100 102 56 100 Q28 98 16 82 Z"
+        fill="url(#steel)" stroke="#5a3f16" stroke-width="2.5"/>
+  <path d="M44 50 L36 28 L58 46 Z" fill="#6e7b86" stroke="#5a3f16" stroke-width="2"/>
+  <path d="M60 44 L58 24 L70 42 Z" fill="#6e7b86" stroke="#5a3f16" stroke-width="1.5"/>
+  <path d="M26 84 Q14 98 32 96 Q24 88 30 82Z" fill="#6e7b86" stroke="#5a3f16" stroke-width="1.5"/>
+  ${glassGauge(82, 62, 9, '#5fb6e0')}
+  ${glassGauge(58, 70, 6, '#5fb6e0')}
+  <path d="M70 84 Q86 88 96 80" fill="none" stroke="#5a3f16" stroke-width="2.5"/>
+  <path d="M40 70 L46 64 L52 70 L58 64 L64 70" fill="none" stroke="#cfd6dc" stroke-width="2"/>
+  ${rivet(40, 60, 2.5)} ${rivet(56, 56, 2.5)} ${rivet(74, 84, 2.5)} ${rivet(50, 86, 2.5)}
+  <g opacity="0.8" fill="#bfe3f5"><circle cx="106" cy="34" r="3"/><circle cx="112" cy="24" r="2"/></g>
+  ${gear(28, 74, 9, 8, '#9aa6b0', 0)}
+`);
+
+// Thornguard — Thornling's evolution: a towering garden golem
+M.Thornguard = wrap(`
+  <g fill="#5aa83e" stroke="#2f5e22" stroke-width="1.2">
+    <path d="M34 50 q-10 -20 6 -26 q0 16 -6 26"/>
+    <path d="M54 42 q-4 -24 12 -18 q-4 16 -12 18"/>
+    <path d="M84 50 q10 -18 18 -8 q-10 12 -18 8"/>
+    <path d="M70 44 q6 -20 16 -12 q-8 14 -16 12"/></g>
+  <path d="M16 92 Q2 90 10 76 Q16 70 24 76 Z" fill="url(#copper)" stroke="#5a3f16" stroke-width="2"/>
+  <ellipse cx="60" cy="80" rx="40" ry="24" fill="url(#brass)" stroke="#5a3f16" stroke-width="2.5"/>
+  <circle cx="86" cy="58" r="22" fill="url(#brass)" stroke="#5a3f16" stroke-width="2.5"/>
+  <circle cx="36" cy="62" r="14" fill="url(#brass)" stroke="#5a3f16" stroke-width="2"/>
+  ${glassGauge(92, 54, 7, '#6cc24a')}
+  ${glassGauge(80, 60, 5, '#6cc24a')}
+  <path d="M78 68 q10 5 18 -1" fill="none" stroke="#9a4f28" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M40 92 l-6 8 M58 94 l0 9 M78 92 l6 8" stroke="#5a3f16" stroke-width="4" stroke-linecap="round"/>
+  ${rivet(48, 82, 2.6)} ${rivet(66, 86, 2.6)} ${rivet(36, 62, 2.4)}
+  ${gear(40, 78, 8, 8, '#b07a32', 20)}
+`);
+
+// Voltabane — Voltikit's evolution: a tesla-coil panther
+M.Voltabane = wrap(`
+  ${steam(24, 34)}
+  <path d="M88 94 Q106 90 98 70 Q94 82 84 82 Z" fill="url(#copper)" stroke="#5a3f16" stroke-width="2"/>
+  <ellipse cx="56" cy="80" rx="32" ry="24" fill="url(#brass)" stroke="#5a3f16" stroke-width="2.5"/>
+  <path d="M38 50 L30 26 L52 46 Z" fill="url(#copper)" stroke="#5a3f16" stroke-width="2"/>
+  <path d="M76 50 L84 26 L62 46 Z" fill="url(#copper)" stroke="#5a3f16" stroke-width="2"/>
+  <circle cx="30" cy="26" r="4" fill="#f8d84a"/><circle cx="84" cy="26" r="4" fill="#f8d84a"/>
+  <circle cx="56" cy="56" r="26" fill="url(#brass)" stroke="#5a3f16" stroke-width="2.5"/>
+  ${glassGauge(46, 52, 7.5, '#f4d23a')}
+  ${glassGauge(66, 52, 7.5, '#f4d23a')}
+  <path d="M48 66 l8 5 l8 -5" fill="none" stroke="#9a4f28" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M56 8 l-7 14 l8 -3 l-5 13" fill="none" stroke="#f8d84a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M22 60 l-8 -4 m76 4 l8 -4" stroke="#f8d84a" stroke-width="2" stroke-linecap="round"/>
+  ${rivet(38, 78, 2.6)} ${rivet(74, 78, 2.6)} ${rivet(56, 90, 2.6)}
+  ${gear(90, 88, 9, 8, '#b07a32', 5)}
+`);
+
+// Granitox — Bouldox's evolution: a fortress beast
+M.Granitox = wrap(`
+  <ellipse cx="60" cy="82" rx="44" ry="26" fill="url(#steel)" stroke="#5a3f16" stroke-width="2.5"/>
+  <rect x="26" y="46" width="68" height="36" rx="8" fill="url(#steel)" stroke="#5a3f16" stroke-width="2.5"/>
+  <rect x="30" y="40" width="12" height="10" fill="#9aa6b0" stroke="#5a3f16"/>
+  <rect x="54" y="36" width="12" height="14" fill="#9aa6b0" stroke="#5a3f16"/>
+  <rect x="78" y="40" width="12" height="10" fill="#9aa6b0" stroke="#5a3f16"/>
+  <path d="M30 60 q-12 6 -4 18" fill="none" stroke="#cfd6dc" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M90 60 q12 6 4 18" fill="none" stroke="#cfd6dc" stroke-width="3.5" stroke-linecap="round"/>
+  ${glassGauge(46, 60, 7, '#caa24a')}
+  ${glassGauge(74, 60, 7, '#caa24a')}
+  <rect x="50" y="70" width="20" height="8" rx="2" fill="#3a2c1e"/>
+  <rect x="53" y="71.5" width="3" height="5" fill="#cfd6dc"/><rect x="58" y="71.5" width="3" height="5" fill="#cfd6dc"/><rect x="63" y="71.5" width="3" height="5" fill="#cfd6dc"/>
+  ${rivet(34, 50, 2.6)} ${rivet(60, 48, 2.6)} ${rivet(86, 50, 2.6)} ${rivet(34, 78, 2.6)} ${rivet(86, 78, 2.6)}
+  <rect x="38" y="86" width="11" height="14" rx="2" fill="#6e7b86" stroke="#5a3f16"/>
+  <rect x="71" y="86" width="11" height="14" rx="2" fill="#6e7b86" stroke="#5a3f16"/>
+  ${gear(60, 32, 13, 10, '#9aa6b0', 0)}
+`);
+
 // ============================================================
 // CHARACTERS (overworld + battle UI helpers)
 // ============================================================
@@ -955,6 +1112,8 @@ const C = {
   clerk: person('#3a8a6a', '#2a6a4a', `<path d="M44 40 q16 -14 32 0" fill="#5a3f16"/>`),
   cinda: person('#b0402a', '#8a2f1a', TOPHAT.replace(/#241a12/g, '#7a1f10').replace('#8a6a22', '#f0a030')),
   marlow: person('#2a5a8a', '#1a3f6a', TOPHAT.replace(/#241a12/g, '#103a5a').replace('#8a6a22', '#5fb6e0')),
+  coach: person('#3a8a6a', '#246a4a', `<path d="M44 40 q16 -16 32 0Z" fill="#244a3a"/><rect x="58" y="22" width="20" height="3" rx="1" fill="#244a3a"/>`,
+    `<rect x="40" y="70" width="40" height="5" rx="2" fill="#e2b04a"/>`),
 };
 
 // ============================================================
@@ -991,11 +1150,37 @@ const T = {
     <g stroke="#7fd0e0" stroke-width="1.3" fill="none" opacity="0.7" stroke-linecap="round">
     <path d="M3 9 q5 -3 10 0 t10 0"/><path d="M5 19 q5 -3 10 0 t10 0"/><path d="M2 27 q5 -3 10 0 t10 0"/></g>
     <circle cx="24" cy="6" r="1.3" fill="#bfe8f0" opacity="0.8"/></svg>`,
+  // ---- interior tiles ----
+  floor: `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <rect width="32" height="32" fill="#caa878"/>
+    <g stroke="#b08a52" stroke-width="1"><path d="M0 0 V32 M16 0 V32 M8 0 V8 M24 0 V8 M8 16 V24 M24 16 V24"/><path d="M0 8 H32 M0 16 H32 M0 24 H32"/></g>
+    <g fill="#dcc096" opacity="0.5"><rect x="1" y="1" width="6" height="6"/><rect x="17" y="9" width="6" height="6"/><rect x="9" y="25" width="6" height="6"/></g></svg>`,
+  mat: `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <rect width="32" height="32" fill="#caa878"/>
+    <rect x="4" y="6" width="24" height="20" rx="3" fill="#a04030" stroke="#6a2418" stroke-width="2"/>
+    <rect x="8" y="10" width="16" height="12" rx="2" fill="none" stroke="#e0b060" stroke-width="1.5"/>
+    <path d="M16 10 V22 M8 16 H24" stroke="#e0b060" stroke-width="1"/></svg>`,
+  wall: `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <rect width="32" height="32" fill="#6a5238"/>
+    <rect width="32" height="16" fill="#7a6244"/>
+    <g stroke="#4a3826" stroke-width="1.4"><path d="M0 16 H32 M0 32 H32 M10 0 V16 M22 16 V32 M2 16 V32 M30 0 V16"/></g>
+    <g fill="#9a7a4a"><circle cx="6" cy="8" r="1.4"/><circle cx="26" cy="8" r="1.4"/></g></svg>`,
+  counter: `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <rect width="32" height="32" fill="#caa878"/>
+    <rect x="0" y="8" width="32" height="18" fill="#8a5a2a" stroke="#5a3f16" stroke-width="2"/>
+    <rect x="0" y="8" width="32" height="6" fill="#a87a3a"/>
+    <g fill="#e2b04a"><circle cx="6" cy="20" r="1.6"/><circle cx="26" cy="20" r="1.6"/></g>
+    ${gear(16, 19, 5, 8, '#b07a32', 0)}</svg>`,
+  rug: `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <rect width="32" height="32" fill="#caa878"/>
+    <rect x="2" y="2" width="28" height="28" rx="2" fill="#3a6a8a" stroke="#244a6a" stroke-width="2"/>
+    <rect x="7" y="7" width="18" height="18" fill="none" stroke="#7fb0d0" stroke-width="1.5"/>
+    ${gear(16, 16, 6, 9, '#5a8aaa', 0)}</svg>`,
 };
 
 // Buildings: walls colored per kind, with brass trim & rivets
 function buildingWall(kind, isDoor) {
-  const cols = { L: ['#8a7ab0', '#6a5a90'], H: ['#c87a7a', '#a85a5a'], M: ['#6a8ac0', '#4a6aa0'], G: ['#caa24a', '#a07a2a'] };
+  const cols = { L: ['#8a7ab0', '#6a5a90'], H: ['#c87a7a', '#a85a5a'], M: ['#6a8ac0', '#4a6aa0'], G: ['#caa24a', '#a07a2a'], A: ['#5aa890', '#3a8a6a'] };
   const c = cols[kind] || cols.G;
   let s = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
     <rect width="32" height="32" fill="${c[1]}"/>
@@ -1019,6 +1204,7 @@ const ROOF = {
   h: `<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="11" fill="#f0e0e0" stroke="#5a3f16" stroke-width="2"/><rect x="14" y="9" width="4" height="14" fill="#c0392b"/><rect x="9" y="14" width="14" height="4" fill="#c0392b"/></svg>`,
   m: `<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="11" fill="#cae0a0" stroke="#5a3f16" stroke-width="2"/><path d="M9 12 h14 l-2 9 h-10Z" fill="#6a8a3a" stroke="#3a5e22"/><path d="M11 12 v-2 a5 5 0 0 1 10 0 v2" fill="none" stroke="#3a5e22" stroke-width="1.5"/></svg>`,
   g: `<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="11" fill="#f0d28a" stroke="#5a3f16" stroke-width="2"/><polygon points="16,7 19,13 25,13 20,17 22,24 16,20 10,24 12,17 7,13 13,13" fill="#c08a2a" stroke="#5a3f16" stroke-width="0.8"/></svg>`,
+  a: `<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="11" fill="#bfe8d8" stroke="#5a3f16" stroke-width="2"/><rect x="8" y="14" width="16" height="4" rx="1" fill="#5a3f16"/><rect x="6" y="11" width="4" height="10" rx="1" fill="#3a8a6a" stroke="#244a3a"/><rect x="22" y="11" width="4" height="10" rx="1" fill="#3a8a6a" stroke="#244a3a"/></svg>`,
 };
 
 const SIGN = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
@@ -1126,6 +1312,44 @@ function noiseHit(t, dur, gain, freq, dest) {
   src.start(t); src.stop(t + dur);
 }
 
+// richer synth voice: ADSR, optional lowpass + detune for warmth
+function voice(freq, t, dur, o) {
+  o = o || {};
+  const type = o.type || 'triangle';
+  const gain = o.gain != null ? o.gain : 0.14;
+  const dest = o.dest || musicGain;
+  const attack = o.attack != null ? o.attack : 0.02;
+  const release = o.release != null ? o.release : 0.1;
+  const osc = ctx.createOscillator();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, t);
+  if (o.glideTo) osc.frequency.exponentialRampToValueAtTime(o.glideTo, t + dur);
+  if (o.detune) osc.detune.setValueAtTime(o.detune, t);
+  let out = osc;
+  if (o.cutoff) {
+    const f = ctx.createBiquadFilter();
+    f.type = 'lowpass';
+    f.frequency.setValueAtTime(o.cutoff, t);
+    f.Q.value = o.q || 0.7;
+    osc.connect(f); out = f;
+  }
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(gain, t + attack);
+  g.gain.setValueAtTime(gain, t + Math.max(attack + 0.001, dur - release));
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  out.connect(g); g.connect(dest);
+  osc.start(t); osc.stop(t + dur + 0.05);
+}
+
+// warm detuned chord pad
+function pad(freqs, t, dur, gain, type) {
+  for (const f of freqs) {
+    voice(f, t, dur, { type: type || 'sine', gain: gain, detune: 7, cutoff: 1700, attack: 0.12, release: 0.35 });
+    voice(f, t, dur, { type: type || 'sine', gain: gain * 0.75, detune: -7, cutoff: 1700, attack: 0.12, release: 0.35 });
+  }
+}
+
 // ---- note tables (Hz) ------------------------------------------
 const N = {
   C3:130.81, D3:146.83, E3:164.81, F3:174.61, G3:196.00, A3:220.00, B3:246.94,
@@ -1134,71 +1358,101 @@ const N = {
   Gs4:415.30, Eb4:311.13, Bb4:466.16, Ab4:415.30, Fs4:369.99
 };
 
-// Overworld: gentle 3/4 clockwork waltz in A minor
-const WORLD_BASS = [N.A3, N.E3, N.E3, N.F3, N.C4, N.C4, N.G3, N.D4, N.D4, N.E3, N.B3, N.B3];
+// ===== Overworld: a clockwork waltz in A minor, 8-bar loop =====
+// chord per bar: root (for bass) + triad (for pad), plus an arp set
+const WORLD_PROG = [
+  { root: N.A3, triad: [N.A3, N.C4, N.E4] }, // Am
+  { root: N.F3, triad: [N.F3, N.A3, N.C4] }, // F
+  { root: N.C4, triad: [N.C4, N.E4, N.G4] }, // C
+  { root: N.G3, triad: [N.G3, N.B3, N.D4] }, // G
+  { root: N.A3, triad: [N.A3, N.C4, N.E4] }, // Am
+  { root: N.F3, triad: [N.F3, N.A3, N.C4] }, // F
+  { root: N.E3, triad: [N.E3, N.Gs4, N.B4] }, // E (harmonic-minor V)
+  { root: N.A3, triad: [N.A3, N.C4, N.E4] }  // Am
+];
+// melody: one slot per beat across 8 bars (24 beats); 0 = rest
 const WORLD_MEL = [
-  N.A4, N.C5, N.E5, N.D5, N.C5, N.B4,
-  N.C5, N.E5, N.A5, N.G5, N.E5, N.C5,
-  N.F4, N.A4, N.C5, N.E5, N.D5, N.C5,
-  N.E4, N.Gs4, N.B4, N.A4, 0, 0
+  N.A4, 0, N.E5,  N.F5, 0, N.E5,  N.G5, 0, N.E5,  N.D5, 0, N.B4,
+  N.C5, 0, N.A4,  N.D5, 0, N.F5,  N.E5, 0, N.Gs4, N.A4, 0, 0
 ];
 
-// Battle: tense 4/4 in A minor with arpeggio drive
-const BATTLE_BASS = [N.A3, N.A3, N.G3, N.G3, N.F3, N.F3, N.E3, N.E3];
-const BATTLE_ARP = [
-  N.A4, N.E5, N.C5, N.E5, N.A4, N.E5, N.C5, N.E5,
-  N.G4, N.D5, N.B4, N.D5, N.G4, N.D5, N.B4, N.D5,
-  N.F4, N.C5, N.A4, N.C5, N.F4, N.C5, N.A4, N.C5,
-  N.E4, N.B4, N.Gs4, N.B4, N.E5, N.B4, N.Gs4, N.B4
+// ===== Battle: driving 4/4 in A minor, 8-bar loop =====
+const BATTLE_PROG = [
+  { root: N.A3, triad: [N.A3, N.C4, N.E4], arp: [N.A4, N.C5, N.E5, N.C5] },
+  { root: N.A3, triad: [N.A3, N.C4, N.E4], arp: [N.A4, N.E5, N.C5, N.E5] },
+  { root: N.F3, triad: [N.F3, N.A3, N.C4], arp: [N.F4, N.A4, N.C5, N.A4] },
+  { root: N.G3, triad: [N.G3, N.B3, N.D4], arp: [N.G4, N.B4, N.D5, N.B4] },
+  { root: N.C4, triad: [N.C4, N.E4, N.G4], arp: [N.C5, N.E5, N.G5, N.E5] },
+  { root: N.D4, triad: [N.D4, N.F4, N.A4], arp: [N.D5, N.F5, N.A5, N.F5] },
+  { root: N.E3, triad: [N.E3, N.Gs4, N.B4], arp: [N.E5, N.Gs4, N.B4, N.Gs4] },
+  { root: N.E3, triad: [N.E3, N.Gs4, N.B4], arp: [N.B4, N.E5, N.Gs4 * 2, N.E5] }
 ];
-const BATTLE_MEL = [N.A5, 0, N.G5, N.A5, 0, N.E5, 0, 0, N.F5, 0, N.E5, N.D5, 0, N.C5, 0, 0];
+// lead melody, one slot per 8th (4 per bar) across 8 bars = 32; 0 = rest
+const BATTLE_MEL = [
+  N.A5, 0, N.G5, N.A5,  0, N.E5, 0, N.A5,
+  N.F5, 0, N.E5, N.D5,  N.E5, 0, N.D5, 0,
+  N.G5, 0, N.E5, N.C5,  N.A5, 0, N.G5, N.A5,
+  N.Gs4 * 2, 0, N.B4 * 2, 0,  N.A5, 0, N.E5, 0
+];
 
 function scheduler() {
   if (!ctx || !currentTrack) return;
   while (nextNoteTime < ctx.currentTime + 0.2) {
     if (currentTrack === 'world') scheduleWorld(nextNoteTime, step);
     else scheduleBattle(nextNoteTime, step);
-    const beat = currentTrack === 'world' ? 0.34 : 0.156;
+    const beat = currentTrack === 'world' ? 0.34 : 0.152;
     nextNoteTime += beat;
     step++;
   }
 }
 
 function scheduleWorld(t, s) {
-  const bar = Math.floor(s / 3);
   const beatInBar = s % 3;
-  const bi = bar % 12;
-  // bass on beat 1, chord stabs on 2 & 3 (waltz)
+  const bar = Math.floor(s / 3) % 8;
+  const ch = WORLD_PROG[bar];
+
   if (beatInBar === 0) {
-    note(WORLD_BASS[bi] / 2, t, 0.5, 'sine', 0.28);
-    tick(t, 0.04);
+    // downbeat: sub-bass + sustained pad for the whole bar + soft tick
+    voice(ch.root / 2, t, 0.55, { type: 'triangle', gain: 0.26, cutoff: 700, attack: 0.01, release: 0.2 });
+    pad(ch.triad, t, 1.02, 0.045, 'sine');
+    tick(t, 0.035);
   } else {
-    const root = WORLD_BASS[bi];
-    note(root, t, 0.28, 'triangle', 0.12);
-    note(root * 1.5, t, 0.28, 'triangle', 0.09);
-    tick(t, 0.025);
+    // up-beats: gentle plucked chord stabs (the "oom-pah-pah")
+    voice(ch.triad[1], t, 0.26, { type: 'triangle', gain: 0.09, cutoff: 2200, release: 0.12 });
+    voice(ch.triad[2], t, 0.26, { type: 'triangle', gain: 0.07, cutoff: 2200, release: 0.12 });
+    tick(t, 0.02);
   }
-  // melody: one note per beat, two bars per phrase note
-  const mi = s % WORLD_MEL.length;
-  if (WORLD_MEL[mi]) note(WORLD_MEL[mi], t, 0.46, 'triangle', 0.16);
+
+  // lead melody (music-box bell)
+  const mel = WORLD_MEL[s % WORLD_MEL.length];
+  if (mel) {
+    voice(mel, t, 0.5, { type: 'triangle', gain: 0.15, cutoff: 3200, attack: 0.01, release: 0.25 });
+    voice(mel * 2, t, 0.4, { type: 'sine', gain: 0.04, attack: 0.01, release: 0.2 }); // shimmer
+  }
+  // high music-box arpeggio counter-line
+  voice(ch.triad[beatInBar % 3] * 2, t, 0.22, { type: 'sine', gain: 0.05, release: 0.1 });
 }
 
 function scheduleBattle(t, s) {
-  const ai = s % BATTLE_ARP.length;
-  const bi = Math.floor(s / 4) % BATTLE_BASS.length;
-  // bass pulse every 2 steps
-  if (s % 2 === 0) note(BATTLE_BASS[bi] / 2, t, 0.3, 'sawtooth', 0.16);
-  // arpeggio drive
-  note(BATTLE_ARP[ai], t, 0.13, 'square', 0.07);
-  // melody every 2 steps
-  if (s % 2 === 0) {
-    const mi = Math.floor(s / 2) % BATTLE_MEL.length;
-    if (BATTLE_MEL[mi]) note(BATTLE_MEL[mi], t, 0.26, 'triangle', 0.17);
-  }
-  // hi-hat tick
-  if (s % 2 === 1) tick(t, 0.03);
-  // kick on downbeats
-  if (s % 4 === 0) noiseHit(t, 0.08, 0.12, 220, musicGain);
+  const step8 = s % 4;          // 8th within the bar
+  const bar = Math.floor(s / 4) % 8;
+  const ch = BATTLE_PROG[bar];
+
+  // pulsing sub-bass on every 8th, accent on the beat
+  voice(ch.root / 2, t, 0.16, { type: 'sawtooth', gain: step8 % 2 === 0 ? 0.17 : 0.1, cutoff: 600, release: 0.05 });
+  // sustained pad once per bar
+  if (step8 === 0) pad(ch.triad, t, 0.62, 0.04, 'sine');
+  // arpeggio drive (bright square through a filter)
+  voice(ch.arp[step8], t, 0.14, { type: 'square', gain: 0.06, cutoff: 2600, release: 0.05 });
+
+  // lead melody
+  const mel = BATTLE_MEL[s % BATTLE_MEL.length];
+  if (mel) voice(mel, t, 0.26, { type: 'triangle', gain: 0.16, cutoff: 3400, attack: 0.01, release: 0.12 });
+
+  // percussion: kick on beats, snare on the back-beat, hats on off-8ths
+  if (step8 === 0) noiseHit(t, 0.09, 0.13, 150, musicGain);
+  if (step8 === 2) noiseHit(t, 0.12, 0.10, 1600, musicGain);
+  if (step8 % 2 === 1) tick(t, 0.028);
 }
 
 function playTrack(name) {
@@ -1244,6 +1498,16 @@ const SFX = {
       case 'Ghost': note(400, t, 0.4, 'sine', 0.16, sfxGain, 200); note(404, t, 0.4, 'sine', 0.14, sfxGain, 198); break;
       default: noiseHit(t, 0.1, 0.2, 800, sfxGain);
     }
+  },
+  // ---- evolution cues ----
+  evolveStart() { if (!ready()) return; const t = ctx.currentTime; note(N.C4, t, 1.0, 'triangle', 0.12, sfxGain, N.G4); },
+  evolvePing(k) { if (!ready()) return; const t = ctx.currentTime; const f = 440 * Math.pow(2, k * 1.5); note(f, t, 0.09, 'square', 0.14, sfxGain); },
+  evolveDone() {
+    if (!ready()) return;
+    const t = ctx.currentTime;
+    [N.C5, N.E5, N.G5, N.C5 * 2, N.E5 * 2].forEach((f, i) => note(f, t + i * 0.11, 0.4, 'triangle', 0.2, sfxGain));
+    note(N.C4, t, 1.4, 'sine', 0.16, sfxGain);
+    note(N.G4, t + 0.2, 1.2, 'sine', 0.12, sfxGain);
   }
 };
 
@@ -1395,10 +1659,40 @@ const SPECIES = {
                moves: ['Ember Claw', 'Pounce', 'Heat Howl', 'Flame Burst'] },
   Snapjaw:   { type: 'Water',    sprite: '🐊', catchRate: 0.55,
                base: { hp: 80, atk: 84, def: 78, spd: 54 },
-               moves: ['Bubble Snap', 'Headbutt', 'Tidal Rush', 'Hydro Jet'] }
+               moves: ['Bubble Snap', 'Headbutt', 'Tidal Rush', 'Hydro Jet'] },
+
+  // ---- evolved forms (reached only by levelling up / evolving) ----
+  Cinderwulf: { type: 'Fire',     sprite: '🦊', catchRate: 0.2,
+               base: { hp: 95, atk: 118, def: 88, spd: 116 },
+               moves: ['Flame Burst', 'Heat Howl', 'Ember Claw', 'Quick Hit'] },
+  Leviadon:  { type: 'Water',    sprite: '🐬', catchRate: 0.2,
+               base: { hp: 110, atk: 100, def: 105, spd: 86 },
+               moves: ['Hydro Jet', 'Tidal Rush', 'Bubble Snap', 'Tail Slam'] },
+  Thornguard:{ type: 'Grass',    sprite: '🦎', catchRate: 0.2,
+               base: { hp: 112, atk: 105, def: 110, spd: 78 },
+               moves: ['Leaf Blade', 'Seed Cannon', 'Vine Lash', 'Headbutt'] },
+  Voltabane: { type: 'Electric', sprite: '🐱', catchRate: 0.2,
+               base: { hp: 92, atk: 110, def: 82, spd: 130 },
+               moves: ['Spark Bolt', 'Static Surge', 'Thunder Fang', 'Quick Hit'] },
+  Granitox:  { type: 'Rock',     sprite: '🐗', catchRate: 0.2,
+               base: { hp: 120, atk: 118, def: 130, spd: 54 },
+               moves: ['Rock Smash', 'Quake Stomp', 'Stone Toss', 'Tail Slam'] }
 };
 
 const STARTERS = ['Embercub', 'Aquafin', 'Thornling'];
+
+// species -> { to, lvl } : reached by levelling up to the given level
+const EVOLUTIONS = {
+  Sproutle:  { to: 'Thornling',  lvl: 12 },
+  Buzzlet:   { to: 'Voltikit',   lvl: 12 },
+  Pebblit:   { to: 'Bouldox',    lvl: 14 },
+  Embercub:  { to: 'Cinderwulf', lvl: 16 },
+  Aquafin:   { to: 'Leviadon',   lvl: 16 },
+  Thornling: { to: 'Thornguard', lvl: 18 },
+  Voltikit:  { to: 'Voltabane',  lvl: 18 },
+  Bouldox:   { to: 'Granitox',   lvl: 22 }
+};
+const evoOf = species => EVOLUTIONS[species] || null;
 
 /* =====================================================
    DATA — WORLD MAPS (20 x 14 tiles)
@@ -1420,15 +1714,15 @@ const MAPS = {
       "#....S.............#",
       "#..................#",
       "#...,,,......,,,...#",
-      "#..................#",
-      "#..................#",
+      "#.............AAAA.#",
+      "#.............AAaA.#",
       "#,,..............,,#",
       "#,,,,,,,,,,,,,,,,,,#",
       "####################",
       "####################"
     ],
     warps: [{ x: 9, y: 0, map: 'route1', tx: 9, ty: 12 }],
-    signs: { '5,5': 'WILLOWBROOK TOWN\n"Where every journey begins."\nProf. Willow\'s lab is to the northwest.' },
+    signs: { '5,5': 'WILLOWBROOK TOWN\n"Where every journey begins."\nThe ACADEMY (bottom-right) trains your lead for free.\nProf. Willow\'s lab is to the northwest.' },
     npcs: [
       {
         id: 'assistant', sprite: '🧑‍🔬', name: 'Assistant',
@@ -1438,7 +1732,7 @@ const MAPS = {
           : ['Whoa there! The tall grass is dangerous without a monster of your own.', 'Professor Willow has a gift for you in the LAB — the building with the microscope plaque!']
       },
       {
-        id: 'granny', sprite: '👵', pos: () => ({ x: 14, y: 8 }), name: 'Granny',
+        id: 'granny', sprite: '👵', pos: () => ({ x: 5, y: 8 }), name: 'Granny',
         lines: () => ['In my day we walked everywhere too.', 'Press P to check on your team, dearie.']
       }
     ],
@@ -1605,13 +1899,76 @@ const MAPS = {
 };
 
 // Normalize map rows to exactly MAP_W chars
-for (const m of Object.values(MAPS)) {
-  m.rows = m.rows.map(r => (r + '####################').slice(0, MAP_W));
-  while (m.rows.length < MAP_H) m.rows.push('#'.repeat(MAP_W));
+function normalizeRows(rows) {
+  rows = rows.map(r => (r + '####################').slice(0, MAP_W));
+  while (rows.length < MAP_H) rows.push('#'.repeat(MAP_W));
+  return rows;
+}
+for (const m of Object.values(MAPS)) m.rows = normalizeRows(m.rows);
+
+/* ---------- building interiors (generated) ---------- */
+const DOOR_KINDS = { l: 'lab', h: 'heal', m: 'shop', g: 'gym', a: 'train' };
+const BUILDING_LABEL = { l: 'Laboratory', h: 'Heal Centre', m: 'Monster Mart', g: 'Gym', a: 'Training Academy' };
+
+// 20x14 room: B wall, F floor, C counter, R rug, X exit mat
+const INTERIOR_TEMPLATE = [
+  "BBBBBBBBBBBBBBBBBBBB",
+  "BFFFFFFFFFFFFFFFFFFB",
+  "BFFFFFCCCCCCCCFFFFFB",
+  "BFFFFFFFFFFFFFFFFFFB",
+  "BFFFFFFFFFFFFFFFFFFB",
+  "BFFFFFFRRRRRRFFFFFFB",
+  "BFFFFFFRRRRRRFFFFFFB",
+  "BFFFFFFRRRRRRFFFFFFB",
+  "BFFFFFFFFFFFFFFFFFFB",
+  "BFFFFFFFFFFFFFFFFFFB",
+  "BFFFFFFFFFFFFFFFFFFB",
+  "BBBBBBBBBXBBBBBBBBBB",
+  "BBBBBBBBBBBBBBBBBBBB",
+  "BBBBBBBBBBBBBBBBBBBB"
+];
+
+const INTERIOR_NPC = {
+  l: { art: 'professor', name: 'Prof. Willow' },
+  h: { art: 'nurse',     name: 'Nurse' },
+  m: { art: 'clerk',     name: 'Clerk' },
+  a: { art: 'coach',     name: 'Coach Dex' }
+};
+
+function buildInterior(town, kind, dx, dy) {
+  const key = `${town}__${kind}_${dx}_${dy}`;
+  const gym = kind === 'g' ? MAPS[town].gym : null;
+  const art = kind === 'g' ? gym.id : INTERIOR_NPC[kind].art;
+  const name = kind === 'g' ? gym.leader : INTERIOR_NPC[kind].name;
+  const healReturn = { map: town, x: dx, y: dy + 1 };
+
+  const npc = {
+    id: key + '_npc', art, name,
+    building: DOOR_KINDS[kind], gym,
+    pos: () => ({ x: 9, y: 4 }),
+    lines: () => ['']
+  };
+  MAPS[key] = {
+    label: `${MAPS[town].label} — ${BUILDING_LABEL[kind]}`,
+    interior: true, parent: town, healReturn,
+    rows: normalizeRows([...INTERIOR_TEMPLATE]),
+    warps: [{ x: 9, y: 11, map: town, tx: dx, ty: dy + 1 }],
+    signs: {}, npcs: [npc], wild: null
+  };
+  MAPS[town].warps.push({ x: dx, y: dy, map: key, tx: 9, ty: 10 });
 }
 
-const WALKABLE = new Set(['.', ',', 'T']);
-const DOOR_KINDS = { l: 'lab', h: 'heal', m: 'shop', g: 'gym' };
+// scan every town for door tiles and wire up interiors
+for (const [town, m] of Object.entries(MAPS)) {
+  if (m.interior) continue;
+  for (let y = 0; y < MAP_H; y++) {
+    for (let x = 0; x < MAP_W; x++) {
+      if ('lhmga'.includes(m.rows[y][x])) buildInterior(town, m.rows[y][x], x, y);
+    }
+  }
+}
+
+const WALKABLE = new Set(['.', ',', 'T', 'F', 'X', 'R', 'l', 'h', 'm', 'g', 'a']);
 
 /* =====================================================
    MONSTERS — stats, XP, leveling
@@ -1650,6 +2007,24 @@ function applyLevelUp(mon) {
   const now = statsAt(mon.species, mon.level);
   mon.maxHp = now.maxHp; mon.atk = now.atk; mon.def = now.def; mon.spd = now.spd;
   mon.hp = Math.min(mon.maxHp, mon.hp + (now.maxHp - old.maxHp));
+}
+
+// mutate a monster into its evolved form, preserving damage taken
+function evolveMon(mon) {
+  const evo = evoOf(mon.species);
+  if (!evo) return null;
+  const fromName = mon.name;
+  const dmgTaken = mon.maxHp - mon.hp;
+  mon.species = evo.to;
+  mon.name = evo.to;
+  mon.type = SPECIES[evo.to].type;
+  mon.sprite = SPECIES[evo.to].sprite;
+  const s = statsAt(evo.to, mon.level);
+  mon.maxHp = s.maxHp; mon.atk = s.atk; mon.def = s.def; mon.spd = s.spd;
+  mon.hp = Math.max(1, mon.maxHp - dmgTaken);
+  mon.moves = [...SPECIES[evo.to].moves];
+  mon.pp = Object.fromEntries(mon.moves.map(mv => [mv, MOVES[mv].pp]));
+  return { from: fromName, to: evo.to };
 }
 
 function effectiveness(moveType, defenderType) {
@@ -1791,7 +2166,7 @@ const held = new Set();
 
 const uiLocked = () => dlg.open || battle.active || overlayOpen();
 const overlayOpen = () =>
-  ['title-overlay', 'party-overlay', 'champion-overlay'].some(id => $(id).style.display === 'flex');
+  ['title-overlay', 'party-overlay', 'champion-overlay', 'evo-overlay'].some(id => $(id).style.display === 'flex');
 
 function tileAt(map, x, y) {
   if (x < 0 || y < 0 || x >= MAP_W || y >= MAP_H) return '#';
@@ -1878,12 +2253,8 @@ async function interact() {
   if (t === 'S') {
     const text = map.signs[`${fx},${fy}`];
     if (text) await owSay(text);
-    return;
   }
-  if (t === 'h') return useHealCenter();
-  if (t === 'm') return useShop();
-  if (t === 'l') return useLab();
-  if (t === 'g') return useGym(map.gym);
+  // building doors are now walkable warps — step onto them to enter.
 }
 
 async function interactNPC(npc) {
@@ -1895,15 +2266,44 @@ async function interactNPC(npc) {
     startBattle({ kind: 'trainer', trainer: tr });
     return;
   }
+  if (npc.building) {
+    if (npc.building === 'lab') return useLab();
+    if (npc.building === 'heal') return useHealCenter();
+    if (npc.building === 'shop') return useShop();
+    if (npc.building === 'gym') return useGym(npc.gym);
+    if (npc.building === 'train') return useTrainingHall();
+  }
   await owSay(npc.lines().map(l => `${npc.name}: ${l}`));
 }
 
 async function useHealCenter() {
   await owSay(['Nurse: Welcome! Let me heal your team to full health.']);
   healParty();
-  G.lastHeal = { map: G.map, x: player.x, y: player.y };
+  const here = MAPS[G.map];
+  G.lastHeal = here.healReturn || { map: G.map, x: player.x, y: player.y };
   saveGame();
   await owSay(['Nurse: There you go — everyone\'s feeling great! Come back any time.']);
+}
+
+async function useTrainingHall() {
+  if (!G.party.length) return owSay(['Coach Dex: Come back once you have a monster to train!']);
+  await owSay(['Coach Dex: Welcome to the Academy! I can train your lead monster for free — handy for testing out evolutions.']);
+  while (true) {
+    const lead = G.party[0];
+    const opts = ['Train +1 level', 'Train +5 levels', 'Leave'];
+    const i = await owChoice(`${lead.name} is Lv${lead.level}. What'll it be?`, opts);
+    if (i === 2) break;
+    const n = i === 0 ? 1 : 5;
+    for (let k = 0; k < n && lead.level < 60; k++) applyLevelUp(lead);
+    lead.hp = lead.maxHp;
+    for (const mv of lead.moves) lead.pp[mv] = MOVES[mv].pp;
+    AUDIO.sfx.levelup();
+    await owSay([`${lead.name} trained hard and is now Lv${lead.level}!`]);
+    await checkEvolutions(lead);
+    updateHUD();
+    saveGame();
+  }
+  await owSay(['Coach Dex: Keep up the good work, trainer!']);
 }
 
 function healParty() {
@@ -2005,9 +2405,14 @@ function terrainImg(t) {
     case '#': return getImg('t#', ART.terrain.tree);
     case 'W': return getImg('tW', ART.terrain.water);
     case 'S': return getImg('tS', ART.sign);
+    case 'F': return getImg('tF', ART.terrain.floor);
+    case 'X': return getImg('tX', ART.terrain.mat);
+    case 'B': return getImg('tB', ART.terrain.wall);
+    case 'C': return getImg('tC', ART.terrain.counter);
+    case 'R': return getImg('tR', ART.terrain.rug);
     default: {
       const kind = t.toUpperCase();
-      if ('LHMG'.includes(kind)) {
+      if ('LHMGA'.includes(kind)) {
         const isDoor = (t !== kind);
         return getImg('b' + t, ART.buildingWall(kind, isDoor));
       }
@@ -2018,8 +2423,8 @@ function terrainImg(t) {
 function ready(im) { return im && im.complete && im.naturalWidth; }
 
 function preloadArt() {
-  for (const t of ['.', ',', 'T', '#', 'W', 'S']) terrainImg(t);
-  for (const t of ['L', 'l', 'H', 'h', 'M', 'm', 'G', 'g']) terrainImg(t);
+  for (const t of ['.', ',', 'T', '#', 'W', 'S', 'F', 'X', 'B', 'C', 'R']) terrainImg(t);
+  for (const t of ['L', 'l', 'H', 'h', 'M', 'm', 'G', 'g', 'A', 'a']) terrainImg(t);
   for (const k of Object.keys(ART.characters)) getImg('c' + k, ART.characters[k]);
   for (const k of Object.keys(ART.roof)) getImg('r' + k, ART.roof[k]);
 }
@@ -2039,7 +2444,7 @@ function renderWorld() {
     for (let x = 0; x < MAP_W; x++) {
       const t = map.rows[y][x];
       const im = terrainImg(t);
-      if ('LHMGlhmgS'.includes(t) && ready(grass)) {
+      if ('LHMGAlhmgaS'.includes(t) && ready(grass)) {
         ctx.fillStyle = '#6f9a4a';
         ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
       }
@@ -2051,7 +2456,7 @@ function renderWorld() {
   for (let y = 0; y < MAP_H; y++) {
     for (let x = 0; x < MAP_W; x++) {
       const t = map.rows[y][x];
-      if ('lhmg'.includes(t)) {
+      if ('lhmga'.includes(t)) {
         const im = getImg('r' + t, ART.roof[t]);
         if (ready(im)) ctx.drawImage(im, x * TILE + 4, (y - 1) * TILE + 2, TILE - 8, TILE - 8);
       }
@@ -2061,7 +2466,8 @@ function renderWorld() {
   // NPCs
   for (const n of map.npcs) {
     const p = n.pos();
-    const im = getImg('c' + (NPC_ART[n.id] || 'kid'), ART.characters[NPC_ART[n.id] || 'kid']);
+    const artKey = n.art || NPC_ART[n.id] || 'kid';
+    const im = getImg('c' + artKey, ART.characters[artKey]);
     if (ready(im)) ctx.drawImage(im, p.x * TILE - 4, p.y * TILE - 12, TILE + 8, TILE + 10);
     if (n.trainer && !G.flags['beat_' + n.trainer.id]) {
       const t = performance.now();
@@ -2342,13 +2748,131 @@ function arenaQuake() {
 }
 
 /* ---------- per-type attack animations ---------- */
-async function animateAttack(moveType, side, power) {
+async function animateAttack(moveName, moveType, side, power) {
   fxResize();
   const a = spriteCenter(side);
   const b = spriteCenter(side === 'player' ? 'enemy' : 'player');
   const heavy = power >= 85;
   const n = heavy ? 1.4 : 1;
 
+  // ---- signature animations for specific moves ----
+  switch (moveName) {
+    case 'Sky Dive': {
+      const el = $(`${side}-sprite`);
+      const flip = side === 'player' ? 'scaleX(-1) ' : '';
+      el.style.transition = 'transform 0.30s ease-in';
+      el.style.transform = flip + 'translateY(-210px)';
+      await sleep(320);
+      for (let i = 0; i < 6; i++) emit({ x: b.x + rand(-30, 30), y: -10, vx: 0, vy: rand(9, 13), size: rand(4, 8), color: '#e8e8f8', life: 30, shape: 'slash', vrot: 0.4 });
+      el.style.transition = 'transform 0.16s ease-in';
+      el.style.transform = flip + `translate(${(b.x - a.x) * 0.35}px, 26px)`;
+      await sleep(170);
+      arenaQuake(); screenFlash('#e8e8f8', 220);
+      burst(b, { count: 22, colors: ['#e8e8f8', '#c8c8e8', '#fff'], speed: [2, 6], life: [14, 28], shape: 'slash', size: [5, 10], vrot: 0.5 });
+      await sleep(220);
+      el.style.transition = 'transform 0.26s ease-out';
+      el.style.transform = flip;
+      await sleep(280); el.style.transition = '';
+      return;
+    }
+    case 'Quake Stomp': {
+      const colors = ['#b8a038', '#988030', '#786028'];
+      arenaQuake();
+      for (let i = 0; i < 5; i++) {
+        setTimeout(() => {
+          emit({ x: b.x + rand(-55, 55), y: fxCanvas.height, vx: rand(-1, 1), vy: -rand(7, 11), g: 0.5, shape: 'rock', size: rand(6, 11), color: colors[randInt(0, 2)], life: 50, fade: false, vrot: rand(-0.3, 0.3) });
+          arenaQuake();
+        }, i * 90);
+      }
+      screenFlash('#caa24a', 260);
+      await sleep(760);
+      burst(b, { count: 10, colors, speed: [1, 3], g: 0.1, life: [14, 24] });
+      return;
+    }
+    case 'Hydro Jet': {
+      const colors = ['#6890f0', '#88b8f8', '#b8e0f8'];
+      for (let i = 0; i < 26; i++) {
+        setTimeout(() => emit({ x: a.x, y: a.y, vx: (b.x - a.x) / 22, vy: (b.y - a.y) / 22 + rand(-0.4, 0.4), size: rand(3, 6), color: colors[randInt(0, 2)], life: 26, g: 0.05 }), i * 12);
+      }
+      await sleep(370);
+      burst(b, { count: 18, colors, speed: [1.5, 4], g: 0.2, life: [16, 28] });
+      emit({ x: b.x, y: b.y, size: 12, color: '#88b8f8', life: 22, shape: 'ring' });
+      if (heavy) screenFlash('#6890f0', 180);
+      return;
+    }
+    case 'Flame Burst': {
+      const colors = ['#f8a030', '#f06028', '#f8d048', '#e83820'];
+      await projectiles(a, b, { count: 6, speed: 9, colors, size: [4, 7] });
+      for (let r = 0; r < 3; r++) {
+        setTimeout(() => {
+          emit({ x: b.x, y: b.y, size: 14 + r * 8, color: '#f06028', life: 18, shape: 'ring' });
+          burst(b, { count: 14, colors, speed: [2, 6], life: [12, 26] });
+        }, r * 80);
+      }
+      burst(b, { count: 10, colors: ['#f8c038', '#9a8a6a'], speed: [0.3, 1], life: [25, 45], g: -0.06 });
+      arenaQuake(); screenFlash('#f8a030', 280);
+      await sleep(520);
+      return;
+    }
+    case 'Spark Bolt': {
+      for (let i = 0; i < 3; i++) fx.bolts.push({ x: b.x + rand(-14, 14), ty: b.y, life: 220 });
+      fxEnsure(); screenFlash('#f8e870', 260);
+      burst(b, { count: 18, colors: ['#f8d030', '#fff8a0'], shape: 'spark', speed: [2, 6], life: [10, 20] });
+      arenaQuake();
+      await sleep(360);
+      return;
+    }
+    case 'Thunder Fang': {
+      fx.bolts.push({ x: b.x, ty: b.y, life: 200 }); fxEnsure();
+      screenFlash('#f8e870', 150);
+      burst(b, { count: 14, colors: ['#f8d030', '#fff8a0', '#fff'], shape: 'spark', speed: [2, 6], life: [8, 18] });
+      emit({ x: b.x - 8, y: b.y - 6, size: 10, color: '#f8d030', life: 14, shape: 'star' });
+      emit({ x: b.x + 8, y: b.y + 6, size: 9, color: '#fff8a0', life: 14, shape: 'star' });
+      await sleep(320);
+      return;
+    }
+    case 'Shadow Rake': {
+      const colors = ['#9878c8', '#705898', '#c9b6f0'];
+      for (let i = 0; i < 3; i++) {
+        setTimeout(() => emit({ x: b.x + rand(-12, 12), y: b.y + rand(-16, 16), size: rand(12, 18), color: colors[randInt(0, 2)], life: 16, shape: 'slash', rot: 0.5 + i * 0.35 }), i * 110);
+      }
+      screenFlash('#503870', 320);
+      await sleep(430);
+      burst(b, { count: 8, colors, speed: [1, 3], life: [12, 20] });
+      return;
+    }
+    case 'Leaf Blade': {
+      const colors = ['#78c850', '#509838', '#a8e080'];
+      for (let i = 0; i < 4; i++) {
+        setTimeout(() => emit({ x: b.x + rand(-10, 10), y: b.y + rand(-14, 14), size: rand(12, 18), color: colors[randInt(0, 2)], life: 16, shape: 'slash', rot: rand(-0.6, 0.6) }), i * 90);
+      }
+      await sleep(440);
+      burst(b, { count: 12, colors, shape: 'leaf', size: [4, 7], speed: [1.5, 3.5], life: [16, 26], vrot: 0.4 });
+      return;
+    }
+    case 'Blizzard Screech': {
+      const colors = ['#98d8d8', '#c8f0f0', '#68b8d8', '#fff'];
+      for (let i = 0; i < 28; i++) {
+        setTimeout(() => emit({ x: -10, y: rand(0, fxCanvas.height), vx: rand(9, 14), vy: rand(-1, 1), size: rand(2, 6), color: colors[randInt(0, 3)], shape: 'shard', life: 60, fade: false, vrot: 0.3 }), i * 22);
+      }
+      screenFlash('#c8f0f0', 260);
+      await sleep(720);
+      burst(b, { count: 14, colors, shape: 'shard', size: [3, 6], speed: [1.5, 4], life: [16, 26] });
+      return;
+    }
+    case 'Quick Hit': {
+      for (let i = 0; i < 10; i++) {
+        setTimeout(() => emit({ x: a.x + (b.x - a.x) * (i / 10), y: a.y + (b.y - a.y) * (i / 10), size: rand(3, 6), color: '#fff', life: 12 }), i * 14);
+      }
+      await sleep(200);
+      emit({ x: b.x, y: b.y, size: 8, color: '#fff', life: 14, shape: 'star' });
+      burst(b, { count: 6, colors: ['#fff', '#e8e0c8'], speed: [1.5, 3.5], life: [10, 16] });
+      await sleep(150);
+      return;
+    }
+  }
+
+  // ---- generic per-type animations ----
   switch (moveType) {
     case 'Fire': {
       const colors = ['#f8a030', '#f06028', '#f8d048', '#e83820'];
@@ -2728,7 +3252,7 @@ async function executeMove(side, move) {
   }
 
   AUDIO.sfx.move(m.type);
-  await animateAttack(m.type, side, m.power);
+  await animateAttack(move, m.type, side, m.power);
 
   const { dmg, eff, crit } = calcDamage(attacker, defender, move);
   if (eff !== 0) {
@@ -2822,6 +3346,58 @@ async function awardXp(foe) {
     burst(spriteCenter('player'), { count: 16, colors: ['#f8d030', '#fff', '#f8a030'], speed: [1, 3.5], life: [20, 35] });
     await say(`${mon.name} grew to level ${mon.level}!`);
   }
+  await checkEvolutions(mon);
+  if (battle.active) renderSide('player');
+}
+
+/* ---------- evolution cutscene ---------- */
+async function checkEvolutions(mon) {
+  while (evoOf(mon.species) && mon.level >= evoOf(mon.species).lvl) {
+    await doEvolution(mon);
+  }
+}
+
+async function doEvolution(mon) {
+  const overlay = $('evo-overlay');
+  const sp = $('evo-sprite');
+  const cap = $('evo-caption');
+  const fromName = mon.name;
+  const toName = evoOf(mon.species).to;
+
+  sp.innerHTML = ART.monsters[mon.species] || '';
+  sp.classList.remove('flash', 'pop');
+  cap.textContent = `What? ${fromName} is evolving!`;
+  overlay.style.display = 'flex';
+  overlay.classList.add('bright');
+  AUDIO.sfx.evolveStart();
+  await sleep(1100);
+
+  // accelerating flash between current and white silhouette; swap at the climax
+  let swapped = false;
+  const delays = [340, 340, 300, 300, 260, 230, 200, 170, 140, 120, 100, 90, 80, 70];
+  for (let i = 0; i < delays.length; i++) {
+    sp.classList.add('flash');
+    if (!swapped && i >= delays.length - 5) {
+      evolveMon(mon);                 // becomes the new species mid-flash
+      sp.innerHTML = ART.monsters[mon.species] || '';
+      swapped = true;
+    }
+    AUDIO.sfx.evolvePing(i / delays.length);
+    await sleep(delays[i] / 2);
+    sp.classList.remove('flash');
+    await sleep(delays[i] / 2);
+  }
+
+  // reveal
+  sp.classList.add('pop');
+  screenFlash('#ffffff', 500);
+  AUDIO.sfx.evolveDone();
+  cap.textContent = `${fromName} evolved into ${toName}!`;
+  await sleep(1400);
+  sp.classList.remove('pop');
+  overlay.classList.remove('bright');
+  overlay.style.display = 'none';
+  saveGame();
 }
 
 async function doSwitch(index, forced) {
