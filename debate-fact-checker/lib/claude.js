@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 
-const client = new Anthropic();
+// Extra retries smooth over flaky home-network connections (default is 2).
+const client = new Anthropic({ maxRetries: 4 });
 
 // Fast, cheap model for the high-frequency extraction pass; strongest model
 // with web search for the (less frequent, higher-stakes) fact-check pass.

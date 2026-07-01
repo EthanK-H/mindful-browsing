@@ -36,6 +36,7 @@ Click **Demo debate** → **Play**. A bundled sample debate (with deliberately c
 
 ## Notes & known limitations
 
-- Real-time speaker diarization accuracy varies by provider/plan; when the stream doesn't carry speaker labels, turns are labeled `Speaker ?`. Batch (post-hoc) diarization is more accurate if you don't need live labels.
+- Live mic mode requests streaming diarization (`speaker_labels=true` on the `u3-rt-pro` streaming model); each turn carries a `speaker_label` like "Speaker A". Click the ✎ on a speaker chip to rename them ("Speaker A" → "Ethan") — the rename applies retroactively and to all future turns. Real-time diarization is less accurate than batch, especially during crosstalk; expect occasional flips.
+- If claim extraction fails with `ETIMEDOUT` connection errors (common on WSL2/home networks), the server now prefers IPv4 for API calls and retries more aggressively. Persistent failures usually mean a local network/VPN issue.
 - Fact-checks take 10–60s each by design (real web research). Cards show `checking…` until the verdict lands.
 - Fixed time windows would cut claims in half, so extraction is triggered by finalized utterances with a short debounce instead.

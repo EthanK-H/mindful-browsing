@@ -259,6 +259,14 @@ h1 {
   border-color: var(--chip-color);
   background: color-mix(in srgb, var(--chip-color) 14%, transparent);
 }
+.chip-rename {
+  margin-left: 2px;
+  color: var(--text-dim);
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s;
+}
+.filter-chip:hover .chip-rename { opacity: 1; }
+.chip-rename:hover { color: var(--text); }
 
 .filtered { display: none !important; }
 

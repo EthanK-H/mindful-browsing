@@ -7,9 +7,9 @@
  * requested rate, and advertising the wrong one makes AssemblyAI hear
  * slowed-down garble (billed, but no usable transcripts).
  *
- * Note on diarization: real-time speaker labels are read from `words[].speaker`
- * when the service provides them. If your AssemblyAI plan/endpoint doesn't
- * support streaming diarization yet, turns are labeled "Speaker ?", and
+ * Diarization: we request streaming speaker labels (`speaker_labels=true`) and
+ * read the turn-level `speaker_label` (falling back to per-word `speaker`).
+ * If the stream carries no labels, turns fall back to "Speaker ?" and
  * everything downstream still works.
  */
 class LiveTranscriber {
@@ -43,10 +43,14 @@ class LiveTranscriber {
     if (this.audioContext.state === "suspended") await this.audioContext.resume();
     const sampleRate = this.audioContext.sampleRate; // typically 44100 or 48000
 
-    const url =
-      "wss://streaming.assemblyai.com/v3/ws" +
-      `?sample_rate=${sampleRate}&format_turns=true&token=${encodeURIComponent(token)}`;
-    this.ws = new WebSocket(url);
+    const params = new URLSearchParams({
+      sample_rate: String(sampleRate),
+      speech_model: "u3-rt-pro",
+      speaker_labels: "true", // streaming diarization: adds speaker_label to Turn events
+      format_turns: "true",
+      token,
+    });
+    this.ws = new WebSocket(`wss://streaming.assemblyai.com/v3/ws?${params}`);
 
     this.ws.onmessage = (event) => this._handleMessage(event);
     this.ws.onerror = () => this.onError(new Error("Transcription socket error — check the browser console."));
@@ -139,9 +143,15 @@ class LiveTranscriber {
     const text = (msg.transcript || "").trim();
     if (!text) return;
 
-    // Streaming diarization (when available) attaches a speaker to each word.
-    const speakerRaw = msg.words && msg.words.length ? msg.words[0].speaker : undefined;
-    const speaker = speakerRaw != null ? `Speaker ${speakerRaw}` : "Speaker ?";
+    // Turn-level speaker_label is the primary signal; fall back to the first
+    // word's speaker. Labels may arrive as "A" or "Speaker A" — normalize.
+    const speakerRaw = msg.speaker_label ?? (msg.words && msg.words.length ? msg.words[0].speaker : undefined);
+    const speaker =
+      speakerRaw == null || speakerRaw === ""
+        ? "Speaker ?"
+        : /^speaker/i.test(String(speakerRaw))
+          ? String(speakerRaw)
+          : `Speaker ${speakerRaw}`;
     const turnOrder = msg.turn_order ?? 0;
 
     // With format_turns=true, each finished turn can arrive twice: once raw

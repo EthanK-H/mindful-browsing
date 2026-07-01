@@ -90,18 +90,21 @@ function showToast(message) {
 }
 
 const SPEAKER_COLORS = ["#6fc2ff", "#ffb26f", "#8de08d", "#e79cf0", "#f2e06f", "#9fb6ff"];
-const speakerColor = (() => {
-  const assigned = new Map();
-  return (name) => {
-    if (!assigned.has(name)) assigned.set(name, SPEAKER_COLORS[assigned.size % SPEAKER_COLORS.length]);
-    return assigned.get(name);
-  };
-})();
+const speakerColorMap = new Map();
+function speakerColor(name) {
+  if (!speakerColorMap.has(name)) {
+    speakerColorMap.set(name, SPEAKER_COLORS[speakerColorMap.size % SPEAKER_COLORS.length]);
+  }
+  return speakerColorMap.get(name);
+}
 
 // ---------------------------------------------------------------------------
 // Transcript handling
 // ---------------------------------------------------------------------------
 function addUtterance({ speaker, text }) {
+  // Apply any rename the user made — live diarization keeps sending raw
+  // labels ("Speaker A"), so map them to the chosen display name forever.
+  speaker = speakerAliases.get(speaker) || speaker;
   state.utterances.push({ speaker, text });
   registerSpeaker(speaker);
 
@@ -329,9 +332,44 @@ function setStatus(mode) {
 // ---------------------------------------------------------------------------
 let speakerFilter = "__all__";
 const knownSpeakers = new Set();
+const speakerAliases = new Map(); // raw incoming label -> user-chosen display name
 
 function matchesFilter(speaker) {
   return speakerFilter === "__all__" || speaker === speakerFilter;
+}
+
+function renameSpeaker(oldName) {
+  const newName = (prompt(`Rename "${oldName}" to:`, oldName) || "").trim();
+  if (!newName || newName === oldName) return;
+
+  // Future utterances: raw labels that resolved to oldName now resolve to newName.
+  for (const [raw, display] of speakerAliases) {
+    if (display === oldName) speakerAliases.set(raw, newName);
+  }
+  speakerAliases.set(oldName, newName);
+
+  // Rewrite existing state + DOM.
+  for (const u of state.utterances) if (u.speaker === oldName) u.speaker = newName;
+  for (const c of state.claims.values()) if (c.speaker === oldName) c.speaker = newName;
+  if (speakerColorMap.has(oldName) && !speakerColorMap.has(newName)) {
+    speakerColorMap.set(newName, speakerColorMap.get(oldName));
+  }
+  knownSpeakers.delete(oldName);
+  knownSpeakers.add(newName);
+  if (speakerFilter === oldName) speakerFilter = newName;
+
+  for (const el of transcriptEl.querySelectorAll(`.utterance[data-speaker="${CSS.escape(oldName)}"]`)) {
+    el.dataset.speaker = newName;
+    const chip = el.querySelector(".speaker-chip");
+    if (chip) {
+      chip.textContent = newName;
+      chip.style.background = speakerColor(newName);
+    }
+  }
+  for (const claim of state.claims.values()) renderClaim(claim);
+
+  rebuildFilterBar();
+  applyFilter();
 }
 
 function registerSpeaker(name) {
@@ -354,20 +392,33 @@ function rebuildFilterBar() {
   label.textContent = "Speakers";
   bar.appendChild(label);
 
-  const mkChip = (value, text, color) => {
+  const mkChip = (value, text, color, renamable) => {
     const b = document.createElement("button");
     b.className = "filter-chip" + (speakerFilter === value ? " active" : "");
-    b.textContent = text;
+    const label = document.createElement("span");
+    label.textContent = text;
+    b.appendChild(label);
     if (color) b.style.setProperty("--chip-color", color);
     b.addEventListener("click", () => {
       speakerFilter = speakerFilter === value ? "__all__" : value;
       rebuildFilterBar();
       applyFilter();
     });
+    if (renamable) {
+      const pen = document.createElement("span");
+      pen.className = "chip-rename";
+      pen.textContent = "✎";
+      pen.title = `Rename ${text}`;
+      pen.addEventListener("click", (e) => {
+        e.stopPropagation();
+        renameSpeaker(value);
+      });
+      b.appendChild(pen);
+    }
     bar.appendChild(b);
   };
   mkChip("__all__", "All");
-  for (const name of knownSpeakers) mkChip(name, name, speakerColor(name));
+  for (const name of knownSpeakers) mkChip(name, name, speakerColor(name), true);
 }
 
 function applyFilter() {
@@ -539,6 +590,8 @@ resetBtn.addEventListener("click", () => {
   state.extractedThrough = 0;
   state.checkQueue = [];
   knownSpeakers.clear();
+  speakerAliases.clear();
+  speakerColorMap.clear();
   speakerFilter = "__all__";
   rebuildFilterBar();
   transcriptEl.innerHTML =

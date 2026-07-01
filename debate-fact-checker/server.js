@@ -1,6 +1,11 @@
 import express from "express";
+import dns from "node:dns";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+
+// Prefer IPv4: on WSL2 and some home networks, IPv6 routes to api.anthropic.com
+// silently time out (undici happy-eyeballs ETIMEDOUT) even though IPv4 works.
+dns.setDefaultResultOrder("ipv4first");
 import {
   extractClaims,
   checkClaim,
