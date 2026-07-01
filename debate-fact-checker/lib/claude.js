@@ -4,8 +4,9 @@ const client = new Anthropic();
 
 // Fast, cheap model for the high-frequency extraction pass; strongest model
 // with web search for the (less frequent, higher-stakes) fact-check pass.
-const EXTRACTION_MODEL = "claude-haiku-4-5";
-const FACTCHECK_MODEL = "claude-opus-4-8";
+// Override either via .env; the defaults are used when the var is unset.
+export const EXTRACTION_MODEL = process.env.EXTRACTION_MODEL || "claude-haiku-4-5";
+export const FACTCHECK_MODEL = process.env.FACTCHECK_MODEL || "claude-opus-4-8";
 
 const VERDICTS = ["true", "false", "misleading", "needs_context", "unverifiable"];
 

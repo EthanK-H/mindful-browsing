@@ -1,7 +1,7 @@
 import express from "express";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { extractClaims, checkClaim } from "./lib/claude.js";
+import { extractClaims, checkClaim, EXTRACTION_MODEL, FACTCHECK_MODEL } from "./lib/claude.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3000;
@@ -69,6 +69,7 @@ app.post("/api/check-claim", async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Debate fact checker running at http://localhost:${PORT}`);
+  console.log(`Models: extraction=${EXTRACTION_MODEL}, fact-check=${FACTCHECK_MODEL}`);
   if (!process.env.ANTHROPIC_API_KEY) {
     console.warn("WARNING: ANTHROPIC_API_KEY is not set — claim extraction and fact-checking will fail.");
   }
