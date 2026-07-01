@@ -16,6 +16,8 @@ const state = {
   mode: "idle",            // idle | live | demo
 };
 
+const settings = { extractionModel: null, factcheckModel: null };
+
 const MAX_CONCURRENT_CHECKS = 2;
 const EXTRACTION_DEBOUNCE_MS = 2500;
 const EXTRACTION_WINDOW = 14; // utterances of context per extraction call
@@ -39,6 +41,38 @@ const demoBtn = $("demo-btn");
 const resetBtn = $("reset-btn");
 const demoPanel = $("demo-panel");
 const demoText = $("demo-text");
+
+// -----------------------------------------------------------------------
+// Model selection — populated from /api/config so dropdowns reflect server
+// defaults; choices ride along on every extraction / fact-check request.
+// -----------------------------------------------------------------------
+async function loadConfig() {
+  const extractionSel = $("extraction-model");
+  const factcheckSel = $("factcheck-model");
+  try {
+    const res = await fetch("/api/config");
+    const { models, defaults } = await res.json();
+
+    for (const sel of [extractionSel, factcheckSel]) {
+      sel.innerHTML = "";
+      for (const m of models) {
+        sel.appendChild(new Option(m.label, m.id));
+      }
+    }
+    // Server default may be a custom model outside the catalog — keep it selectable.
+    for (const [sel, def] of [[extractionSel, defaults.extraction], [factcheckSel, defaults.factcheck]]) {
+      if (![...sel.options].some((o) => o.value === def)) sel.appendChild(new Option(def, def));
+      sel.value = def;
+    }
+    settings.extractionModel = defaults.extraction;
+    settings.factcheckModel = defaults.factcheck;
+  } catch (err) {
+    console.error("config load failed:", err);
+  }
+  extractionSel.addEventListener("change", () => (settings.extractionModel = extractionSel.value));
+  factcheckSel.addEventListener("change", () => (settings.factcheckModel = factcheckSel.value));
+}
+loadConfig();
 
 const SPEAKER_COLORS = ["#6fc2ff", "#ffb26f", "#8de08d", "#e79cf0", "#f2e06f", "#9fb6ff"];
 const speakerColor = (() => {
@@ -105,7 +139,7 @@ async function runExtraction() {
     const res = await fetch("/api/extract-claims", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ transcript, knownClaims }),
+      body: JSON.stringify({ transcript, knownClaims, model: settings.extractionModel }),
     });
     if (!res.ok) throw new Error((await res.json()).error || res.statusText);
     const { claims } = await res.json();
@@ -160,7 +194,12 @@ async function checkOne(id) {
     const res = await fetch("/api/check-claim", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ claim: claim.text, speaker: claim.speaker, context: claim.context }),
+      body: JSON.stringify({
+        claim: claim.text,
+        speaker: claim.speaker,
+        context: claim.context,
+        model: settings.factcheckModel,
+      }),
     });
     if (!res.ok) throw new Error((await res.json()).error || res.statusText);
     const result = await res.json();
@@ -259,6 +298,8 @@ function setStatus(mode) {
   state.mode = mode;
   statusPill.textContent = mode;
   statusPill.className = `pill ${mode === "live" ? "pill-live" : mode === "demo" ? "pill-demo" : "pill-idle"}`;
+  const dot = $("live-dot");
+  dot.className = `dot ${mode === "live" ? "live" : mode === "demo" ? "demo" : ""}`.trim();
 }
 
 // ---------------------------------------------------------------------------
@@ -268,7 +309,7 @@ micBtn.addEventListener("click", async () => {
   if (transcriber?.running) {
     transcriber.stop();
     transcriber = null;
-    micBtn.textContent = "Start mic";
+    $("mic-label").textContent = "Start mic";
     micBtn.classList.remove("recording");
     setStatus("idle");
     return;
@@ -282,7 +323,7 @@ micBtn.addEventListener("click", async () => {
       onError: (e) => console.error(e),
     });
     await transcriber.start();
-    micBtn.textContent = "Stop mic";
+    $("mic-label").textContent = "Stop mic";
     micBtn.classList.add("recording");
     setStatus("live");
   } catch (err) {
@@ -374,10 +415,12 @@ resetBtn.addEventListener("click", () => {
   state.claims.clear();
   state.extractedThrough = 0;
   state.checkQueue = [];
-  transcriptEl.innerHTML = '<p class="empty-note">Start the mic or run the demo debate. Finalized speech appears here with speaker labels.</p>';
+  transcriptEl.innerHTML =
+    '<div class="empty-note"><p>Nothing yet.</p><p>Start the mic or run the demo debate — finalized speech lands here with speaker labels.</p></div>';
   transcriptEl.appendChild(partialEl);
   partialEl.classList.add("hidden");
-  claimsEl.innerHTML = '<p class="empty-note">Checkable claims are pulled from the transcript automatically and researched with web search. Verdicts land here as they finish.</p>';
+  claimsEl.innerHTML =
+    '<div class="empty-note"><p>No claims yet.</p><p>Checkable claims are pulled from the transcript automatically and researched with web search. Verdicts land here as they finish.</p></div>';
   $("utterance-count").textContent = "";
   $("claim-count").textContent = "";
 });

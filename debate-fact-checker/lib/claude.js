@@ -4,9 +4,21 @@ const client = new Anthropic();
 
 // Fast, cheap model for the high-frequency extraction pass; strongest model
 // with web search for the (less frequent, higher-stakes) fact-check pass.
-// Override either via .env; the defaults are used when the var is unset.
+// Defaults come from .env (or the fallbacks below); the UI can override
+// per-request from the models listed in MODEL_OPTIONS.
 export const EXTRACTION_MODEL = process.env.EXTRACTION_MODEL || "claude-haiku-4-5";
 export const FACTCHECK_MODEL = process.env.FACTCHECK_MODEL || "claude-sonnet-5";
+
+export const MODEL_OPTIONS = [
+  { id: "claude-haiku-4-5", label: "Haiku 4.5 · fastest" },
+  { id: "claude-sonnet-5", label: "Sonnet 5 · balanced" },
+  { id: "claude-opus-4-8", label: "Opus 4.8 · most capable" },
+];
+
+// Newer models take the dynamic-filtering web search tool and adaptive
+// thinking; older tiers (Haiku 4.5) need the basic search variant and no
+// adaptive-thinking param.
+const MODERN_MODEL = /^claude-(opus-4-[678]|sonnet-5|sonnet-4-6)/;
 
 const VERDICTS = ["true", "false", "misleading", "needs_context", "unverifiable"];
 
@@ -59,13 +71,13 @@ Rules:
 - Do NOT re-extract claims that are semantically the same as any claim in the "already extracted" list, even if worded differently. Debaters repeat themselves constantly.
 - Prefer precision over volume. If a turn contains no checkable claims, return an empty list.`;
 
-export async function extractClaims(transcript, knownClaims = []) {
+export async function extractClaims(transcript, knownClaims = [], model = EXTRACTION_MODEL) {
   const knownBlock = knownClaims.length
     ? `Already extracted (do NOT repeat these or paraphrases of them):\n${knownClaims.map((c) => `- ${c}`).join("\n")}`
     : "No claims have been extracted yet.";
 
   const response = await client.messages.create({
-    model: EXTRACTION_MODEL,
+    model,
     max_tokens: 2000,
     system: EXTRACTION_SYSTEM,
     messages: [
@@ -103,10 +115,17 @@ Verdicts:
 After researching, end your reply with ONLY a JSON object (no markdown fence, no trailing prose) shaped exactly like:
 {"verdict": "true|false|misleading|needs_context|unverifiable", "confidence": "high|medium|low", "explanation": "<2-3 sentence plain-language explanation citing the key evidence>"}`;
 
-export async function checkClaim({ claim, speaker, context }) {
+export async function checkClaim({ claim, speaker, context, model = FACTCHECK_MODEL }) {
   const parts = [`Claim to fact-check: "${claim}"`];
   if (speaker) parts.push(`Said by: ${speaker}`);
   if (context) parts.push(`Debate context (for interpretation only, not evidence):\n${context}`);
+
+  const modern = MODERN_MODEL.test(model);
+  const searchTool = {
+    type: modern ? "web_search_20260209" : "web_search_20250305",
+    name: "web_search",
+    max_uses: 5,
+  };
 
   const messages = [{ role: "user", content: parts.join("\n\n") }];
   let response;
@@ -115,11 +134,11 @@ export async function checkClaim({ claim, speaker, context }) {
   // re-send to let the server resume where it left off.
   for (let attempt = 0; attempt < 5; attempt++) {
     const stream = client.messages.stream({
-      model: FACTCHECK_MODEL,
+      model,
       max_tokens: 16000,
-      thinking: { type: "adaptive" },
+      ...(modern ? { thinking: { type: "adaptive" } } : {}),
       system: FACTCHECK_SYSTEM,
-      tools: [{ type: "web_search_20260209", name: "web_search", max_uses: 5 }],
+      tools: [searchTool],
       messages,
     });
     response = await stream.finalMessage();

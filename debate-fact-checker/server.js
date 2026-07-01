@@ -1,7 +1,18 @@
 import express from "express";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { extractClaims, checkClaim, EXTRACTION_MODEL, FACTCHECK_MODEL } from "./lib/claude.js";
+import {
+  extractClaims,
+  checkClaim,
+  EXTRACTION_MODEL,
+  FACTCHECK_MODEL,
+  MODEL_OPTIONS,
+} from "./lib/claude.js";
+
+// Only models from the catalog may be selected by the client; anything else
+// silently falls back to the server-configured default.
+const VALID_MODELS = new Set(MODEL_OPTIONS.map((m) => m.id));
+const pickModel = (requested, fallback) => (VALID_MODELS.has(requested) ? requested : fallback);
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3000;
@@ -9,6 +20,14 @@ const PORT = process.env.PORT || 3000;
 const app = express();
 app.use(express.json({ limit: "1mb" }));
 app.use(express.static(path.join(__dirname, "public")));
+
+// Model catalog + server defaults, so the UI dropdowns reflect .env config.
+app.get("/api/config", (req, res) => {
+  res.json({
+    models: MODEL_OPTIONS,
+    defaults: { extraction: EXTRACTION_MODEL, factcheck: FACTCHECK_MODEL },
+  });
+});
 
 // Mint a short-lived AssemblyAI streaming token so the browser can open the
 // WebSocket directly without ever seeing the real API key. Returns 501 when
@@ -37,12 +56,12 @@ app.get("/api/streaming-token", async (req, res) => {
 // Extract checkable factual claims from a window of transcript.
 // Body: { transcript: string, knownClaims: string[] }
 app.post("/api/extract-claims", async (req, res) => {
-  const { transcript, knownClaims = [] } = req.body || {};
+  const { transcript, knownClaims = [], model } = req.body || {};
   if (!transcript || typeof transcript !== "string") {
     return res.status(400).json({ error: "transcript (string) is required" });
   }
   try {
-    const claims = await extractClaims(transcript, knownClaims);
+    const claims = await extractClaims(transcript, knownClaims, pickModel(model, EXTRACTION_MODEL));
     res.json({ claims });
   } catch (err) {
     console.error("extract-claims failed:", err);
@@ -54,12 +73,12 @@ app.post("/api/extract-claims", async (req, res) => {
 // the client shows the claim as "checking" until this resolves.
 // Body: { claim: string, speaker?: string, context?: string }
 app.post("/api/check-claim", async (req, res) => {
-  const { claim, speaker, context } = req.body || {};
+  const { claim, speaker, context, model } = req.body || {};
   if (!claim || typeof claim !== "string") {
     return res.status(400).json({ error: "claim (string) is required" });
   }
   try {
-    const result = await checkClaim({ claim, speaker, context });
+    const result = await checkClaim({ claim, speaker, context, model: pickModel(model, FACTCHECK_MODEL) });
     res.json(result);
   } catch (err) {
     console.error("check-claim failed:", err);
