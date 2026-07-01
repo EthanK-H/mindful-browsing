@@ -2,13 +2,15 @@
  * LiveTranscriber — microphone -> AssemblyAI Universal-Streaming (v3) WebSocket.
  *
  * The browser fetches a short-lived token from our backend (the real API key
- * never reaches the client), opens the streaming socket, and forwards 16kHz
- * PCM16 audio. Finalized turns are surfaced via onUtterance callbacks.
+ * never reaches the client), opens the streaming socket, and forwards PCM16
+ * audio at the AudioContext's REAL sample rate — browsers may ignore a
+ * requested rate, and advertising the wrong one makes AssemblyAI hear
+ * slowed-down garble (billed, but no usable transcripts).
  *
  * Note on diarization: real-time speaker labels are read from `words[].speaker`
  * when the service provides them. If your AssemblyAI plan/endpoint doesn't
- * support streaming diarization yet, turns are labeled by turn-taking heuristic
- * ("Speaker ?"), and everything downstream still works.
+ * support streaming diarization yet, turns are labeled "Speaker ?", and
+ * everything downstream still works.
  */
 class LiveTranscriber {
   constructor({ onUtterance, onPartial, onStatus, onError }) {
@@ -21,6 +23,7 @@ class LiveTranscriber {
     this.mediaStream = null;
     this.workletNode = null;
     this.running = false;
+    this.lastEmittedTurn = -1;
   }
 
   async start() {
@@ -31,45 +34,63 @@ class LiveTranscriber {
     }
     const { token } = await tokenRes.json();
 
+    // Mic + audio context FIRST, so we know the true capture rate before
+    // telling AssemblyAI what to expect.
     this.mediaStream = await navigator.mediaDevices.getUserMedia({
       audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
     });
+    this.audioContext = new AudioContext();
+    if (this.audioContext.state === "suspended") await this.audioContext.resume();
+    const sampleRate = this.audioContext.sampleRate; // typically 44100 or 48000
 
     const url =
       "wss://streaming.assemblyai.com/v3/ws" +
-      `?sample_rate=16000&format_turns=true&token=${encodeURIComponent(token)}`;
+      `?sample_rate=${sampleRate}&format_turns=true&token=${encodeURIComponent(token)}`;
     this.ws = new WebSocket(url);
 
     this.ws.onmessage = (event) => this._handleMessage(event);
-    this.ws.onerror = () => this.onError(new Error("Transcription socket error"));
-    this.ws.onclose = () => {
-      if (this.running) this.onStatus("disconnected");
+    this.ws.onerror = () => this.onError(new Error("Transcription socket error — check the browser console."));
+    this.ws.onclose = (e) => {
+      const wasRunning = this.running;
       this.running = false;
+      if (wasRunning) {
+        this.onStatus("disconnected");
+        if (e.code !== 1000) {
+          this.onError(new Error(`Transcription stream closed (${e.code}): ${e.reason || "no reason given"}`));
+        }
+      }
     };
 
     await new Promise((resolve, reject) => {
-      this.ws.onopen = resolve;
       const t = setTimeout(() => reject(new Error("Transcription socket timed out")), 8000);
-      this.ws.addEventListener("open", () => clearTimeout(t), { once: true });
+      this.ws.addEventListener("open", () => { clearTimeout(t); resolve(); }, { once: true });
+      this.ws.addEventListener("close", (e) => {
+        clearTimeout(t);
+        reject(new Error(`Could not connect to AssemblyAI (${e.code}): ${e.reason || "connection refused"}`));
+      }, { once: true });
     });
 
-    await this._startAudioPump();
+    await this._startAudioPump(sampleRate);
     this.running = true;
     this.onStatus("live");
   }
 
-  async _startAudioPump() {
-    this.audioContext = new AudioContext({ sampleRate: 16000 });
-    // Inline AudioWorklet: batches mic samples into ~50ms PCM16 frames.
+  async _startAudioPump(sampleRate) {
+    // ~50ms frames at the actual rate (AssemblyAI wants 50-1000ms chunks).
+    const chunkSamples = Math.round(sampleRate * 0.05);
     const workletSource = `
       class PcmForwarder extends AudioWorkletProcessor {
-        constructor() { super(); this.buf = []; this.len = 0; }
+        constructor(options) {
+          super();
+          this.chunk = (options.processorOptions && options.processorOptions.chunkSamples) || 800;
+          this.buf = []; this.len = 0;
+        }
         process(inputs) {
           const ch = inputs[0] && inputs[0][0];
           if (ch) {
             this.buf.push(new Float32Array(ch));
             this.len += ch.length;
-            if (this.len >= 800) { // 50ms @ 16kHz
+            if (this.len >= this.chunk) {
               const flat = new Float32Array(this.len);
               let o = 0;
               for (const b of this.buf) { flat.set(b, o); o += b.length; }
@@ -92,7 +113,9 @@ class LiveTranscriber {
     URL.revokeObjectURL(blobUrl);
 
     const source = this.audioContext.createMediaStreamSource(this.mediaStream);
-    this.workletNode = new AudioWorkletNode(this.audioContext, "pcm-forwarder");
+    this.workletNode = new AudioWorkletNode(this.audioContext, "pcm-forwarder", {
+      processorOptions: { chunkSamples },
+    });
     this.workletNode.port.onmessage = (e) => {
       if (this.ws && this.ws.readyState === WebSocket.OPEN) this.ws.send(e.data);
     };
@@ -106,6 +129,11 @@ class LiveTranscriber {
     } catch {
       return;
     }
+
+    if (msg.type === "Error" || msg.error) {
+      this.onError(new Error(`AssemblyAI: ${msg.error || JSON.stringify(msg)}`));
+      return;
+    }
     if (msg.type !== "Turn") return;
 
     const text = (msg.transcript || "").trim();
@@ -114,10 +142,18 @@ class LiveTranscriber {
     // Streaming diarization (when available) attaches a speaker to each word.
     const speakerRaw = msg.words && msg.words.length ? msg.words[0].speaker : undefined;
     const speaker = speakerRaw != null ? `Speaker ${speakerRaw}` : "Speaker ?";
+    const turnOrder = msg.turn_order ?? 0;
 
-    if (msg.end_of_turn) {
-      this.onPartial("");
-      this.onUtterance({ speaker, text, turnOrder: msg.turn_order });
+    // With format_turns=true, each finished turn can arrive twice: once raw
+    // (end_of_turn, unformatted) and once formatted. Emit each turn exactly
+    // once, preferring the formatted version; show everything else as the
+    // live partial line.
+    if (msg.end_of_turn && (msg.turn_is_formatted || msg.turn_is_formatted === undefined)) {
+      if (turnOrder > this.lastEmittedTurn) {
+        this.lastEmittedTurn = turnOrder;
+        this.onPartial("");
+        this.onUtterance({ speaker, text, turnOrder });
+      }
     } else {
       this.onPartial(`${speaker}: ${text}`);
     }

@@ -74,6 +74,21 @@ async function loadConfig() {
 }
 loadConfig();
 
+// Toast — surfaces pipeline/mic errors that used to die silently in the console.
+let toastTimer = null;
+function showToast(message) {
+  let el = $("toast");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "toast";
+    document.body.appendChild(el);
+  }
+  el.textContent = message;
+  el.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove("show"), 6000);
+}
+
 const SPEAKER_COLORS = ["#6fc2ff", "#ffb26f", "#8de08d", "#e79cf0", "#f2e06f", "#9fb6ff"];
 const speakerColor = (() => {
   const assigned = new Map();
@@ -88,10 +103,13 @@ const speakerColor = (() => {
 // ---------------------------------------------------------------------------
 function addUtterance({ speaker, text }) {
   state.utterances.push({ speaker, text });
+  registerSpeaker(speaker);
 
   transcriptEl.querySelector(".empty-note")?.remove();
   const p = document.createElement("p");
   p.className = "utterance";
+  p.dataset.speaker = speaker;
+  if (!matchesFilter(speaker)) p.classList.add("filtered");
   const chip = document.createElement("span");
   chip.className = "speaker-chip";
   chip.textContent = speaker;
@@ -150,6 +168,7 @@ async function runExtraction() {
     }
   } catch (err) {
     console.error("extraction failed:", err);
+    showToast(`Claim extraction failed: ${err.message}`);
     // leave extractedThrough as-is so the next utterance retries this window
   } finally {
     state.extracting = false;
@@ -239,6 +258,9 @@ function renderClaim(claim) {
     card.id = claim.id;
     claimsEl.prepend(card);
   }
+  card.dataset.speaker = claim.speaker || "";
+  registerSpeaker(claim.speaker);
+  card.classList.toggle("filtered", !matchesFilter(claim.speaker));
 
   const checking = claim.status === "checking";
   card.dataset.verdict = checking ? "checking" : claim.verdict;
@@ -303,6 +325,98 @@ function setStatus(mode) {
 }
 
 // ---------------------------------------------------------------------------
+// Speaker filter — chips appear as speakers show up; filters both columns
+// ---------------------------------------------------------------------------
+let speakerFilter = "__all__";
+const knownSpeakers = new Set();
+
+function matchesFilter(speaker) {
+  return speakerFilter === "__all__" || speaker === speakerFilter;
+}
+
+function registerSpeaker(name) {
+  if (!name || knownSpeakers.has(name)) return;
+  knownSpeakers.add(name);
+  rebuildFilterBar();
+}
+
+function rebuildFilterBar() {
+  const bar = $("speaker-filter");
+  if (!knownSpeakers.size) {
+    bar.classList.add("hidden");
+    return;
+  }
+  bar.classList.remove("hidden");
+  bar.innerHTML = "";
+
+  const label = document.createElement("span");
+  label.className = "filter-label";
+  label.textContent = "Speakers";
+  bar.appendChild(label);
+
+  const mkChip = (value, text, color) => {
+    const b = document.createElement("button");
+    b.className = "filter-chip" + (speakerFilter === value ? " active" : "");
+    b.textContent = text;
+    if (color) b.style.setProperty("--chip-color", color);
+    b.addEventListener("click", () => {
+      speakerFilter = speakerFilter === value ? "__all__" : value;
+      rebuildFilterBar();
+      applyFilter();
+    });
+    bar.appendChild(b);
+  };
+  mkChip("__all__", "All");
+  for (const name of knownSpeakers) mkChip(name, name, speakerColor(name));
+}
+
+function applyFilter() {
+  for (const el of transcriptEl.querySelectorAll(".utterance")) {
+    el.classList.toggle("filtered", !matchesFilter(el.dataset.speaker));
+  }
+  for (const el of claimsEl.querySelectorAll(".claim-card")) {
+    el.classList.toggle("filtered", !matchesFilter(el.dataset.speaker));
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Column resizer — drag the divider; double-click to reset; persisted locally
+// ---------------------------------------------------------------------------
+(function initResizer() {
+  const resizer = $("col-resizer");
+  const main = document.querySelector("main");
+  if (!resizer || !main) return;
+
+  const saved = Number(localStorage.getItem("verdict-split"));
+  if (saved > 0) main.style.gridTemplateColumns = `${saved}px 6px 1fr`;
+
+  let dragging = false;
+  resizer.addEventListener("pointerdown", (e) => {
+    dragging = true;
+    resizer.setPointerCapture(e.pointerId);
+    document.body.classList.add("resizing");
+  });
+  resizer.addEventListener("pointermove", (e) => {
+    if (!dragging) return;
+    const rect = main.getBoundingClientRect();
+    const left = Math.min(Math.max(e.clientX - rect.left, 240), rect.width - 340);
+    main.style.gridTemplateColumns = `${left}px 6px 1fr`;
+  });
+  resizer.addEventListener("pointerup", (e) => {
+    if (!dragging) return;
+    dragging = false;
+    resizer.releasePointerCapture(e.pointerId);
+    document.body.classList.remove("resizing");
+    const px = parseFloat(main.style.gridTemplateColumns);
+    if (px) localStorage.setItem("verdict-split", Math.round(px));
+  });
+  resizer.addEventListener("dblclick", () => {
+    main.style.gridTemplateColumns = "";
+    localStorage.removeItem("verdict-split");
+  });
+})();
+
+// ---------------------------------------------------------------------------
 // Mic mode
 // ---------------------------------------------------------------------------
 micBtn.addEventListener("click", async () => {
@@ -319,8 +433,17 @@ micBtn.addEventListener("click", async () => {
     transcriber = new LiveTranscriber({
       onUtterance: addUtterance,
       onPartial: showPartial,
-      onStatus: (s) => s === "disconnected" && setStatus("idle"),
-      onError: (e) => console.error(e),
+      onStatus: (s) => {
+        if (s === "disconnected") {
+          setStatus("idle");
+          $("mic-label").textContent = "Start mic";
+          micBtn.classList.remove("recording");
+        }
+      },
+      onError: (e) => {
+        console.error(e);
+        showToast(e.message);
+      },
     });
     await transcriber.start();
     $("mic-label").textContent = "Stop mic";
@@ -415,6 +538,9 @@ resetBtn.addEventListener("click", () => {
   state.claims.clear();
   state.extractedThrough = 0;
   state.checkQueue = [];
+  knownSpeakers.clear();
+  speakerFilter = "__all__";
+  rebuildFilterBar();
   transcriptEl.innerHTML =
     '<div class="empty-note"><p>Nothing yet.</p><p>Start the mic or run the demo debate — finalized speech lands here with speaker labels.</p></div>';
   transcriptEl.appendChild(partialEl);
