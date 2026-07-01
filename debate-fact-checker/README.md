@@ -4,13 +4,13 @@ Streams a debate (microphone or pasted transcript) through a four-stage pipeline
 
 ```
 audio ──► diarized transcript ──► claim extraction ──► web-grounded fact-check ──► verdict feed
-        (AssemblyAI streaming)   (Claude Haiku 4.5)     (Claude Opus 4.8 +          (color-coded
+        (AssemblyAI streaming)   (Claude Haiku 4.5)     (Claude Sonnet 5 +          (color-coded
                                                           web search tool)            claim cards)
 ```
 
 - **Transcription** — the browser mints a short-lived AssemblyAI streaming token from the backend (the real key never reaches the client) and forwards 16kHz PCM over the Universal-Streaming WebSocket. Speaker labels are read from the stream when available.
 - **Claim extraction** — every time speech finalizes (debounced ~2.5s), the recent transcript window goes to Claude Haiku 4.5 with a strict JSON schema: extract discrete checkable claims, resolve pronouns, skip opinion/rhetoric/predictions, and dedupe against claims already found.
-- **Fact-checking** — each claim is queued (2 concurrent) to Claude Opus 4.8 with the web search tool. Verdicts are `true / false / misleading / needs_context / unverifiable` with confidence, a short explanation, and cited sources.
+- **Fact-checking** — each claim is queued (2 concurrent) to Claude Sonnet 5 with the web search tool. Verdicts are `true / false / misleading / needs_context / unverifiable` with confidence, a short explanation, and cited sources.
 - **UI** — live transcript with per-speaker colors on the left, verdict cards on the right.
 
 ## Setup
