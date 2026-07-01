@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Live Debate Fact Checker</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <span class="brand-mark">✓✗</span>
+      <div>
+        <h1>Live Debate Fact Checker</h1>
+        <p class="tagline">streaming transcript &rarr; claim extraction &rarr; web-grounded verdicts</p>
+      </div>
+    </div>
+    <div class="controls">
+      <span id="status-pill" class="pill pill-idle">idle</span>
+      <button id="mic-btn" class="btn btn-primary">Start mic</button>
+      <button id="demo-btn" class="btn">Demo debate</button>
+      <button id="reset-btn" class="btn btn-quiet" title="Clear transcript and claims">Reset</button>
+    </div>
+  </header>
+
+  <section id="demo-panel" class="demo-panel hidden">
+    <div class="demo-panel-head">
+      <strong>Demo mode</strong>
+      <span>Feeds a transcript line-by-line to simulate a live debate. Edit it, or paste your own (<code>Name: what they said</code> per line).</span>
+    </div>
+    <textarea id="demo-text" rows="6" spellcheck="false"></textarea>
+    <div class="demo-panel-actions">
+      <button id="demo-play-btn" class="btn btn-primary">Play</button>
+      <button id="demo-step-btn" class="btn">Feed next line</button>
+      <label>Line interval
+        <select id="demo-interval">
+          <option value="2500">2.5s</option>
+          <option value="4000" selected>4s</option>
+          <option value="6000">6s</option>
+        </select>
+      </label>
+    </div>
+  </section>
+
+  <main>
+    <section class="column">
+      <div class="column-head">
+        <h2>Transcript</h2>
+        <span id="utterance-count" class="count"></span>
+      </div>
+      <div id="transcript" class="scroll-area">
+        <p class="empty-note">Start the mic or run the demo debate. Finalized speech appears here with speaker labels.</p>
+        <p id="partial-line" class="partial hidden"></p>
+      </div>
+    </section>
+
+    <section class="column">
+      <div class="column-head">
+        <h2>Fact checks</h2>
+        <span id="claim-count" class="count"></span>
+      </div>
+      <div id="claims" class="scroll-area">
+        <p class="empty-note">Checkable claims are pulled from the transcript automatically and researched with web search. Verdicts land here as they finish.</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="audio.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
