@@ -1,11 +1,17 @@
 import express from "express";
 import dns from "node:dns";
+import net from "node:net";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-// Prefer IPv4: on WSL2 and some home networks, IPv6 routes to api.anthropic.com
-// silently time out (undici happy-eyeballs ETIMEDOUT) even though IPv4 works.
-dns.setDefaultResultOrder("ipv4first");
+// Node's "happy eyeballs" races connection attempts with a 250ms timeout per
+// attempt — far too aggressive for WSL2/home networks with latency spikes,
+// and the usual cause of intermittent `fetch failed ... ETIMEDOUT` bursts.
+net.setDefaultAutoSelectFamilyAttemptTimeout(2000);
+
+// Optional escape hatch if one IP family is broken on your network:
+// set DNS_ORDER=ipv4first or DNS_ORDER=ipv6first in .env.
+if (process.env.DNS_ORDER) dns.setDefaultResultOrder(process.env.DNS_ORDER);
 import {
   extractClaims,
   checkClaim,
