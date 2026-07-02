@@ -169,6 +169,11 @@ h1 {
 .btn-quiet:hover { color: var(--text); background: var(--panel); border-color: var(--border); }
 .btn.recording { background: var(--false); color: #fff; }
 .btn.recording:hover { background: #fa8a8a; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn:disabled:hover { border-color: var(--border); background: var(--panel); transform: none; }
+.btn.btn-primary:disabled:hover { background: var(--accent); }
+.btn.busy svg { animation: spin 0.9s linear infinite; transform-origin: center; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
 .pill {
   padding: 4px 13px;
@@ -437,6 +442,19 @@ body.resizing .scroll-area { pointer-events: none; }
   padding: 2px 9px;
   border: 1px solid var(--border);
   border-radius: 999px;
+}
+
+.claim-why {
+  margin: 8px 0 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-dim);
+  font-style: italic;
+}
+.meta-key {
+  color: var(--accent) !important;
+  border-color: rgba(56, 189, 248, 0.4) !important;
+  background: var(--accent-soft);
 }
 
 .claim-explanation { margin: 10px 0 0; font-size: 0.88rem; line-height: 1.6; color: #c8d2dd; }

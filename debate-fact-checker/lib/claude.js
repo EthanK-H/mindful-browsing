@@ -24,8 +24,12 @@ const MODERN_MODEL = /^claude-(opus-4-[678]|sonnet-5|sonnet-4-6)/;
 const VERDICTS = ["true", "false", "misleading", "needs_context", "unverifiable"];
 
 // ---------------------------------------------------------------------------
-// Claim extraction
+// Claim selection — run once over the WHOLE transcript on demand. Because the
+// model sees the full debate, it can judge which claims are load-bearing (the
+// debate actually turns on them) rather than surfacing every stray statistic.
 // ---------------------------------------------------------------------------
+
+const MAX_CLAIMS = 8;
 
 const CLAIMS_SCHEMA = {
   type: "object",
@@ -38,7 +42,7 @@ const CLAIMS_SCHEMA = {
           text: {
             type: "string",
             description:
-              "The claim, rewritten as a single self-contained sentence. Resolve pronouns and vague references using the transcript context.",
+              "The claim, rewritten as a single self-contained sentence. Resolve pronouns and vague references using the full transcript.",
           },
           speaker: {
             type: "string",
@@ -48,13 +52,17 @@ const CLAIMS_SCHEMA = {
             type: "string",
             enum: ["statistical", "historical", "attribution", "scientific", "policy", "other"],
           },
-          checkworthiness: {
+          significance: {
             type: "string",
-            enum: ["high", "medium", "low"],
-            description: "How valuable and feasible it is to fact-check this claim.",
+            enum: ["high", "medium"],
+            description: "How load-bearing the claim is to the debate's central disagreements.",
+          },
+          why: {
+            type: "string",
+            description: "One short phrase: why this claim matters to the debate (what argument rests on it).",
           },
         },
-        required: ["text", "speaker", "category", "checkworthiness"],
+        required: ["text", "speaker", "category", "significance", "why"],
         additionalProperties: false,
       },
     },
@@ -63,28 +71,32 @@ const CLAIMS_SCHEMA = {
   additionalProperties: false,
 };
 
-const EXTRACTION_SYSTEM = `You extract discrete, checkable factual claims from live debate transcripts.
+const SELECTION_SYSTEM = `You are the editorial lead for a live debate fact-checking desk. You are handed the FULL debate transcript and must select ONLY the claims worth checking on air.
 
-Rules:
-- Extract only claims that are verifiable against external evidence: statistics and numbers, historical events, quotes or positions attributed to people or organizations, scientific assertions, and concrete descriptions of laws or policies.
-- Skip opinions, values, predictions about the future, rhetorical questions, insults, applause lines, and vague generalities ("my opponent doesn't care about families").
-- Rewrite each claim as one self-contained sentence a fact-checker could research in isolation: resolve pronouns, fill in who/what/when from the surrounding transcript.
-- Do NOT re-extract claims that are semantically the same as any claim in the "already extracted" list, even if worded differently. Debaters repeat themselves constantly.
-- Prefer precision over volume. If a turn contains no checkable claims, return an empty list.`;
+Select a claim when it is BOTH:
+1. LOAD-BEARING — it is central to a point of disagreement, a speaker builds an argument on it, it is repeated or emphasized, or knowing whether it is true would change how a viewer judges the exchange.
+2. CHECKABLE — verifiable against external evidence: a specific statistic or number, a historical fact, a position/quote attributed to a person or organization, a scientific assertion, or a concrete description of a law or policy.
 
-export async function extractClaims(transcript, knownClaims = [], model = EXTRACTION_MODEL) {
+Deliberately SKIP:
+- Throwaway or hyper-specific details no argument rests on.
+- Opinions, values, predictions about the future, rhetoric, insults, applause lines.
+- Vague generalities and anything too subjective to research ("my opponent doesn't care about families").
+
+Because you can see the ENTIRE debate, judge importance in context. Prefer the handful of claims the debate genuinely turns on over an exhaustive list. Select at most ${MAX_CLAIMS} claims — fewer for a short debate. Order them most-significant first. Rewrite each as one self-contained sentence a fact-checker could research in isolation. Never select a claim that is semantically the same as one in the "already checked" list.`;
+
+export async function selectClaims(transcript, knownClaims = [], model = EXTRACTION_MODEL) {
   const knownBlock = knownClaims.length
-    ? `Already extracted (do NOT repeat these or paraphrases of them):\n${knownClaims.map((c) => `- ${c}`).join("\n")}`
-    : "No claims have been extracted yet.";
+    ? `Already checked (do NOT reselect these or paraphrases):\n${knownClaims.map((c) => `- ${c}`).join("\n")}`
+    : "Nothing has been checked yet.";
 
   const response = await client.messages.create({
     model,
-    max_tokens: 2000,
-    system: EXTRACTION_SYSTEM,
+    max_tokens: 3000,
+    system: SELECTION_SYSTEM,
     messages: [
       {
         role: "user",
-        content: `${knownBlock}\n\nTranscript window (most recent speech last):\n"""\n${transcript}\n"""\n\nExtract the new checkable claims.`,
+        content: `${knownBlock}\n\nFull debate transcript:\n"""\n${transcript}\n"""\n\nSelect the load-bearing, checkable claims worth fact-checking.`,
       },
     ],
     output_config: { format: { type: "json_schema", schema: CLAIMS_SCHEMA } },
@@ -92,7 +104,7 @@ export async function extractClaims(transcript, knownClaims = [], model = EXTRAC
 
   const text = response.content.find((b) => b.type === "text")?.text ?? '{"claims":[]}';
   const parsed = JSON.parse(text);
-  return Array.isArray(parsed.claims) ? parsed.claims : [];
+  return Array.isArray(parsed.claims) ? parsed.claims.slice(0, MAX_CLAIMS) : [];
 }
 
 // ---------------------------------------------------------------------------

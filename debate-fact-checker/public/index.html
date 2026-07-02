@@ -34,11 +34,15 @@
 
     <div class="controls">
       <span id="status-pill" class="pill pill-idle">idle</span>
-      <button id="mic-btn" class="btn btn-primary">
+      <button id="mic-btn" class="btn">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-2.08A7 7 0 0 0 19 12h-2z"/></svg>
         <span id="mic-label">Start mic</span>
       </button>
       <button id="demo-btn" class="btn">Demo debate</button>
+      <button id="analyze-btn" class="btn btn-primary" disabled title="Analyze the transcript and research the load-bearing claims">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M9.5 3a6.5 6.5 0 1 0 4.03 11.61l4.93 4.93 1.41-1.41-4.93-4.93A6.5 6.5 0 0 0 9.5 3zm0 2a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9z"/></svg>
+        <span id="analyze-label">Fact-check</span>
+      </button>
       <button id="reset-btn" class="btn btn-quiet" title="Clear transcript and claims">Reset</button>
     </div>
   </header>
@@ -89,7 +93,7 @@
       <div id="claims" class="scroll-area">
         <div class="empty-note">
           <p>No claims yet.</p>
-          <p>Checkable claims are pulled from the transcript automatically and researched with web search. Verdicts land here as they finish.</p>
+          <p>Press <strong>Fact-check</strong> once there's a transcript. The whole debate is analyzed for its load-bearing claims, which are then researched with web search — verdicts land here as they finish.</p>
         </div>
       </div>
     </section>

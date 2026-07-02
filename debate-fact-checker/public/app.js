@@ -9,8 +9,7 @@
 const state = {
   utterances: [],          // { speaker, text }
   claims: new Map(),       // id -> { id, text, speaker, category, status, verdict, ... }
-  extractedThrough: 0,     // count of utterances already sent through extraction
-  extracting: false,
+  analyzing: false,        // an on-demand full-transcript analysis is in flight
   checkQueue: [],
   activeChecks: 0,
   mode: "idle",            // idle | live | demo
@@ -19,10 +18,7 @@ const state = {
 const settings = { extractionModel: null, factcheckModel: null };
 
 const MAX_CONCURRENT_CHECKS = 2;
-const EXTRACTION_DEBOUNCE_MS = 2500;
-const EXTRACTION_WINDOW = 14; // utterances of context per extraction call
 
-let extractionTimer = null;
 let transcriber = null;
 let demoTimer = null;
 let demoLines = [];
@@ -41,6 +37,7 @@ const demoBtn = $("demo-btn");
 const resetBtn = $("reset-btn");
 const demoPanel = $("demo-panel");
 const demoText = $("demo-text");
+const analyzeBtn = $("analyze-btn");
 
 // -----------------------------------------------------------------------
 // Model selection — populated from /api/config so dropdowns reflect server
@@ -123,7 +120,7 @@ function addUtterance({ speaker, text }) {
   transcriptEl.scrollTop = transcriptEl.scrollHeight;
 
   $("utterance-count").textContent = `${state.utterances.length} turns`;
-  scheduleExtraction();
+  updateAnalyzeBtn();
 }
 
 function showPartial(text) {
@@ -133,50 +130,59 @@ function showPartial(text) {
 }
 
 // ---------------------------------------------------------------------------
-// Claim extraction (debounced after each finalized utterance)
+// On-demand analysis — the "Fact-check" button. Sends the WHOLE transcript so
+// the model can pick out the load-bearing claims (not every stray statistic),
+// then each selected claim is researched with the full transcript as context.
 // ---------------------------------------------------------------------------
-function scheduleExtraction() {
-  clearTimeout(extractionTimer);
-  extractionTimer = setTimeout(runExtraction, EXTRACTION_DEBOUNCE_MS);
+function updateAnalyzeBtn() {
+  if (!analyzeBtn) return;
+  const label = $("analyze-label");
+  if (state.analyzing) {
+    analyzeBtn.disabled = true;
+    analyzeBtn.classList.add("busy");
+    label.textContent = "Analyzing…";
+  } else {
+    analyzeBtn.disabled = state.utterances.length === 0;
+    analyzeBtn.classList.remove("busy");
+    label.textContent = state.claims.size ? "Re-check" : "Fact-check";
+  }
 }
 
-async function runExtraction() {
-  if (state.extracting) {
-    scheduleExtraction();
-    return;
-  }
-  if (state.extractedThrough >= state.utterances.length) return;
+async function analyzeTranscript() {
+  if (state.analyzing || !state.utterances.length) return;
 
-  state.extracting = true;
-  const upTo = state.utterances.length;
-  const windowStart = Math.max(0, upTo - EXTRACTION_WINDOW);
-  const transcript = state.utterances
-    .slice(windowStart, upTo)
-    .map((u) => `${u.speaker}: ${u.text}`)
-    .join("\n");
+  state.analyzing = true;
+  updateAnalyzeBtn();
+
+  const transcript = state.utterances.map((u) => `${u.speaker}: ${u.text}`).join("\n");
   const knownClaims = [...state.claims.values()].map((c) => c.text);
 
   try {
-    const res = await fetch("/api/extract-claims", {
+    const res = await fetch("/api/analyze", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ transcript, knownClaims, model: settings.extractionModel }),
     });
     if (!res.ok) throw new Error((await res.json()).error || res.statusText);
     const { claims } = await res.json();
-    state.extractedThrough = upTo;
+
+    let added = 0;
     for (const claim of claims) {
-      if (claim.checkworthiness === "low") continue;
-      enqueueClaim(claim, transcript);
+      if (enqueueClaim(claim, transcript)) added++;
+    }
+    if (added === 0) {
+      showToast(knownClaims.length ? "No new load-bearing claims found." : "No checkable claims found in this transcript.");
     }
   } catch (err) {
-    console.error("extraction failed:", err);
-    showToast(`Claim extraction failed: ${err.message}`);
-    // leave extractedThrough as-is so the next utterance retries this window
+    console.error("analysis failed:", err);
+    showToast(`Analysis failed: ${err.message}`);
   } finally {
-    state.extracting = false;
+    state.analyzing = false;
+    updateAnalyzeBtn();
   }
 }
+
+if (analyzeBtn) analyzeBtn.addEventListener("click", analyzeTranscript);
 
 // Client-side dedupe backstop on top of the model-side dedupe.
 function normalizeClaim(text) {
@@ -186,7 +192,7 @@ function normalizeClaim(text) {
 function enqueueClaim(claim, context) {
   const norm = normalizeClaim(claim.text);
   for (const existing of state.claims.values()) {
-    if (normalizeClaim(existing.text) === norm) return;
+    if (normalizeClaim(existing.text) === norm) return false;
   }
   const id = `claim-${state.claims.size + 1}-${Date.now()}`;
   const record = { id, ...claim, context, status: "checking", verdict: null };
@@ -194,6 +200,8 @@ function enqueueClaim(claim, context) {
   renderClaim(record);
   state.checkQueue.push(id);
   pumpCheckQueue();
+  updateAnalyzeBtn();
+  return true;
 }
 
 // ---------------------------------------------------------------------------
@@ -287,10 +295,20 @@ function renderClaim(claim) {
   speakerSpan.style.color = speakerColor(claim.speaker || "Unknown speaker");
   meta.appendChild(speakerSpan);
   if (claim.category) meta.appendChild(Object.assign(document.createElement("span"), { textContent: claim.category }));
+  if (claim.significance === "high") {
+    meta.appendChild(Object.assign(document.createElement("span"), { className: "meta-key", textContent: "key claim" }));
+  }
   if (!checking && claim.confidence) {
     meta.appendChild(Object.assign(document.createElement("span"), { textContent: `${claim.confidence} confidence` }));
   }
   card.appendChild(meta);
+
+  if (claim.why) {
+    const why = document.createElement("p");
+    why.className = "claim-why";
+    why.textContent = `Why it matters: ${claim.why}`;
+    card.appendChild(why);
+  }
 
   if (!checking && claim.explanation) {
     const exp = document.createElement("p");
@@ -584,10 +602,9 @@ $("demo-step-btn").addEventListener("click", () => {
 resetBtn.addEventListener("click", () => {
   stopDemo();
   demoIndex = 0;
-  clearTimeout(extractionTimer);
   state.utterances = [];
   state.claims.clear();
-  state.extractedThrough = 0;
+  state.analyzing = false;
   state.checkQueue = [];
   knownSpeakers.clear();
   speakerAliases.clear();
@@ -599,7 +616,8 @@ resetBtn.addEventListener("click", () => {
   transcriptEl.appendChild(partialEl);
   partialEl.classList.add("hidden");
   claimsEl.innerHTML =
-    '<div class="empty-note"><p>No claims yet.</p><p>Checkable claims are pulled from the transcript automatically and researched with web search. Verdicts land here as they finish.</p></div>';
+    '<div class="empty-note"><p>No claims yet.</p><p>Press <strong>Fact-check</strong> once there\'s a transcript. The whole debate is analyzed for its load-bearing claims, which are then researched with web search — verdicts land here as they finish.</p></div>';
   $("utterance-count").textContent = "";
   $("claim-count").textContent = "";
+  updateAnalyzeBtn();
 });

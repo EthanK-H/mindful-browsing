@@ -13,7 +13,7 @@ net.setDefaultAutoSelectFamilyAttemptTimeout(2000);
 // set DNS_ORDER=ipv4first or DNS_ORDER=ipv6first in .env.
 if (process.env.DNS_ORDER) dns.setDefaultResultOrder(process.env.DNS_ORDER);
 import {
-  extractClaims,
+  selectClaims,
   checkClaim,
   EXTRACTION_MODEL,
   FACTCHECK_MODEL,
@@ -64,18 +64,19 @@ app.get("/api/streaming-token", async (req, res) => {
   }
 });
 
-// Extract checkable factual claims from a window of transcript.
-// Body: { transcript: string, knownClaims: string[] }
-app.post("/api/extract-claims", async (req, res) => {
+// Select the load-bearing, checkable claims from the FULL transcript.
+// Run on demand (the "Fact-check" button), not live.
+// Body: { transcript: string, knownClaims: string[], model?: string }
+app.post("/api/analyze", async (req, res) => {
   const { transcript, knownClaims = [], model } = req.body || {};
   if (!transcript || typeof transcript !== "string") {
     return res.status(400).json({ error: "transcript (string) is required" });
   }
   try {
-    const claims = await extractClaims(transcript, knownClaims, pickModel(model, EXTRACTION_MODEL));
+    const claims = await selectClaims(transcript, knownClaims, pickModel(model, EXTRACTION_MODEL));
     res.json({ claims });
   } catch (err) {
-    console.error("extract-claims failed:", err);
+    console.error("analyze failed:", err);
     res.status(500).json({ error: err.message });
   }
 });
