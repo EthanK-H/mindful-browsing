@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Missing Eleven — ENG 1–2 ARG · WC 2026 Semi-final</title>
+<style>
+  :root{
+    --pitch-1:#1e7a3c; --pitch-2:#23874400; --pitch-a:#1f8040; --pitch-b:#1b7038;
+    --line:rgba(255,255,255,.55);
+    --bg:#080d16; --panel:#0e1626; --panel-2:#121c30;
+    --ink:#eef3fa; --muted:#8fa0b8;
+    --eng:#ffffff; --eng-trim:#1b2f5e; --arg:#75aadb; --arg-trim:#0a2a52;
+    --good:#2ee06f; --warn:#ffb020; --bad:#ff5262; --gold:#ffd75e;
+    --radius:14px;
+    font-size:16px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    font-family:"Segoe UI",system-ui,-apple-system,Roboto,"Helvetica Neue",Arial,sans-serif;
+    background:
+      radial-gradient(1200px 500px at 20% -10%, #14304d55, transparent 60%),
+      radial-gradient(1000px 600px at 90% 0%, #4a2a6b33, transparent 60%),
+      var(--bg);
+    color:var(--ink);
+    min-height:100%;
+    overflow-x:hidden;
+  }
+  button{font-family:inherit;cursor:pointer}
+  input{font-family:inherit}
+
+  /* ---------- broadcast score bug ---------- */
+  .scorebug-wrap{display:flex;justify-content:center;padding:14px 12px 4px}
+  .scorebug{
+    display:flex;align-items:stretch;border-radius:10px;overflow:hidden;
+    box-shadow:0 8px 30px #000a, 0 0 0 1px #ffffff14;
+    font-weight:700;letter-spacing:.5px;user-select:none;
+  }
+  .sb-team{display:flex;align-items:center;gap:9px;padding:9px 16px;font-size:1.02rem}
+  .sb-team.eng{background:linear-gradient(180deg,#233a6e,#182a52)}
+  .sb-team.arg{background:linear-gradient(180deg,#3a7db5,#2b5e8e)}
+  .sb-flag{font-size:1.25rem;line-height:1}
+  .sb-score{
+    display:flex;align-items:center;gap:10px;padding:9px 16px;font-size:1.25rem;
+    background:linear-gradient(180deg,#0c1220,#050810);color:var(--gold);
+    font-variant-numeric:tabular-nums;
+  }
+  .sb-min{background:#0c1220;color:#9fe3b8;display:flex;align-items:center;padding:9px 12px;font-size:.8rem;letter-spacing:1px}
+  .comp-line{text-align:center;color:var(--muted);font-size:.78rem;letter-spacing:2.5px;text-transform:uppercase;margin:8px 0 2px}
+  .comp-line b{color:#cfd9ea}
+
+  /* ---------- layout ---------- */
+  .stage{
+    display:grid;grid-template-columns:minmax(300px,430px) minmax(340px,560px);
+    gap:22px;justify-content:center;align-items:start;
+    padding:10px 14px 60px;max-width:1080px;margin:0 auto;
+  }
+  @media (max-width:780px){
+    .stage{grid-template-columns:1fr;max-width:520px}
+    .panel{order:2}
+  }
+
+  /* ---------- pitch ---------- */
+  .pitch-wrap{position:relative;width:100%;max-width:430px;margin:0 auto}
+  .pitch{
+    position:relative;width:100%;aspect-ratio:66/100;
+    border-radius:12px;overflow:hidden;
+    background:
+      repeating-linear-gradient(0deg, #1f8743 0 10%, #1a7439 10% 20%);
+    box-shadow:
+      inset 0 0 60px #052e1466,
+      0 18px 50px #000c,
+      0 0 0 1px #ffffff1c;
+  }
+  .pitch::before{ /* floodlight sheen */
+    content:"";position:absolute;inset:0;
+    background:
+      radial-gradient(90% 55% at 50% -8%, #eaffdc2a, transparent 60%),
+      radial-gradient(90% 55% at 50% 108%, #eaffdc22, transparent 60%);
+    pointer-events:none;
+  }
+  .pitch svg.lines{position:absolute;inset:0;width:100%;height:100%}
+  .pitch svg.lines *{stroke:var(--line);stroke-width:.55;fill:none}
+  .half-label{
+    position:absolute;left:8px;color:#ffffff2e;font-weight:800;font-size:.66rem;
+    letter-spacing:3px;text-transform:uppercase;writing-mode:vertical-rl;pointer-events:none;
+  }
+  .half-label.top{top:12px}
+  .half-label.bottom{bottom:12px;transform:rotate(180deg)}
+
+  /* ---------- player cards ---------- */
+  .spot{
+    position:absolute;transform:translate(-50%,-50%);
+    width:15%;display:flex;flex-direction:column;align-items:center;gap:1px;
+    perspective:600px;
+  }
+  .jersey{
+    width:100%;aspect-ratio:1/0.92;position:relative;
+    transition:transform .55s cubic-bezier(.2,.9,.3,1.2);
+    transform-style:preserve-3d;
+    filter:drop-shadow(0 4px 8px #0009);
+  }
+  .spot.revealed .jersey{transform:rotateY(360deg) scale(1.06)}
+  .spot.hinted .jersey{animation:pulse 1.1s ease-in-out infinite}
+  @keyframes pulse{0%,100%{filter:drop-shadow(0 0 2px #ffd75e88)}50%{filter:drop-shadow(0 0 12px #ffd75e)}}
+  .jersey svg{width:100%;height:100%;display:block}
+  .jersey .pos-tag,.jersey .qmark,.jersey .hint-letter{
+    position:absolute;left:0;right:0;text-align:center;pointer-events:none;font-weight:800;
+  }
+  .jersey .qmark{top:34%;font-size:1.35em;color:#ffffffd8;text-shadow:0 1px 3px #0008}
+  .jersey .hint-letter{top:34%;font-size:1.2em;color:var(--gold);text-shadow:0 1px 3px #000}
+  .jersey .pos-tag{bottom:8%;font-size:.55em;letter-spacing:1px;color:#ffffff90}
+  .name-plate{
+    font-size:.62rem;font-weight:700;letter-spacing:.2px;text-align:center;line-height:1.15;
+    padding:2px 6px;border-radius:6px;min-height:1.15em;
+    background:#04101dd9;color:#fff;box-shadow:0 2px 6px #0007;
+    white-space:nowrap;max-width:150%;
+  }
+  .spot:not(.revealed) .name-plate{visibility:hidden}
+  .spot.revealed.found .name-plate{background:#0a3d22;color:#b8ffd4;box-shadow:0 0 0 1px #2ee06f66,0 2px 6px #0007}
+  .spot.revealed.given .name-plate{background:#4a2c05;color:#ffe2ae;box-shadow:0 0 0 1px #ffb02055,0 2px 6px #0007}
+  .badge-row{position:absolute;top:-6%;right:-10%;display:flex;gap:2px;font-size:.7em;filter:drop-shadow(0 1px 2px #000)}
+  .spot .cap{position:absolute;top:-4%;left:-8%;font-size:.55em;background:var(--gold);color:#3a2c00;font-weight:900;border-radius:4px;padding:0 3px;box-shadow:0 1px 3px #0008}
+  .spot.pop .jersey{animation:pop .45s cubic-bezier(.2,1.6,.4,1)}
+  @keyframes pop{0%{transform:scale(.6)}100%{transform:scale(1.06)}}
+
+  /* ---------- side panel ---------- */
+  .panel{display:flex;flex-direction:column;gap:14px}
+  .card{
+    background:linear-gradient(180deg,var(--panel-2),var(--panel));
+    border:1px solid #ffffff12;border-radius:var(--radius);
+    padding:16px;box-shadow:0 10px 30px #0008;
+  }
+  .hud{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+  .hud .stat{display:flex;flex-direction:column;align-items:center;min-width:64px}
+  .hud .stat .v{font-size:1.35rem;font-weight:800;font-variant-numeric:tabular-nums}
+  .hud .stat .k{font-size:.62rem;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase}
+  .hud .stat .v.time-low{color:var(--bad);animation:blink 1s steps(2) infinite}
+  @keyframes blink{50%{opacity:.35}}
+  #modeTag{font-size:.68rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;
+    background:#1c2b4a;border:1px solid #3b568c;color:#a9c4f5;padding:4px 10px;border-radius:99px}
+
+  .guess-row{display:flex;gap:8px}
+  .guess-row input{
+    flex:1;min-width:0;background:#0a1220;border:1px solid #2a3a58;border-radius:10px;
+    color:var(--ink);font-size:1.05rem;padding:12px 14px;outline:none;
+    transition:border-color .15s, box-shadow .15s;
+  }
+  .guess-row input:focus{border-color:#4a7dd6;box-shadow:0 0 0 3px #4a7dd633}
+  #guessInput.shake{animation:shake .4s}
+  @keyframes shake{20%{transform:translateX(-7px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(3px)}}
+  .btn{
+    border:none;border-radius:10px;padding:12px 16px;font-weight:700;font-size:.92rem;
+    background:#24406f;color:#dce8ff;transition:transform .1s, background .15s;
+  }
+  .btn:hover{background:#2d5090;transform:translateY(-1px)}
+  .btn.small{padding:8px 12px;font-size:.8rem}
+  .btn.ghost{background:#182238;color:#9fb2d1;border:1px solid #2c3c5c}
+  .btn.ghost:hover{background:#1f2c48}
+  .btn.danger{background:#5d2030;color:#ffc9d1}
+  .btn.danger:hover{background:#77293d}
+  .btn.gold{background:linear-gradient(180deg,#f4c64a,#d9a423);color:#3a2a00}
+  .btn.gold:hover{filter:brightness(1.07)}
+  .btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+
+  .lives{display:flex;gap:4px;font-size:1rem}
+  .toast{
+    min-height:1.3em;margin-top:9px;font-size:.86rem;font-weight:600;color:var(--muted);
+    transition:color .2s;
+  }
+  .toast.ok{color:var(--good)} .toast.err{color:var(--bad)} .toast.info{color:var(--gold)}
+
+  .progress-track{height:8px;background:#0a1220;border-radius:99px;overflow:hidden;margin-top:12px;border:1px solid #ffffff10}
+  .progress-fill{height:100%;width:0%;border-radius:99px;
+    background:linear-gradient(90deg,#2ee06f,#9fe3b8);transition:width .4s cubic-bezier(.2,.9,.3,1)}
+
+  .team-progress{display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted);margin-top:7px}
+  .team-progress b{color:var(--ink)}
+
+  .found-feed{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;max-height:110px;overflow-y:auto}
+  .chip{
+    font-size:.72rem;font-weight:700;padding:4px 9px;border-radius:99px;animation:chipIn .3s;
+    background:#12321f;color:#9fe3b8;border:1px solid #2ee06f44;
+  }
+  .chip.arg-chip{background:#12283c;color:#a8d4f5;border-color:#75aadb55}
+  @keyframes chipIn{from{transform:scale(.5);opacity:0}}
+
+  h3.card-title{font-size:.72rem;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+
+  /* ---------- overlays ---------- */
+  .overlay{
+    position:fixed;inset:0;background:#03060cdd;backdrop-filter:blur(6px);
+    display:flex;align-items:center;justify-content:center;z-index:50;padding:18px;
+    animation:fadeIn .25s;
+  }
+  @keyframes fadeIn{from{opacity:0}}
+  .overlay.hidden{display:none}
+  .modal{
+    width:min(560px,100%);max-height:92vh;overflow-y:auto;
+    background:linear-gradient(180deg,#15203a,#0c1424);
+    border:1px solid #ffffff1a;border-radius:18px;padding:26px 26px 22px;
+    box-shadow:0 30px 80px #000d;text-align:center;
+  }
+  .modal h1{font-size:1.5rem;margin-bottom:4px;letter-spacing:.5px}
+  .modal .sub{color:var(--muted);font-size:.85rem;margin-bottom:18px}
+  .big-score{
+    display:flex;justify-content:center;align-items:center;gap:14px;
+    font-size:1.9rem;font-weight:900;margin:10px 0 2px;letter-spacing:1px;
+  }
+  .big-score .num{color:var(--gold);font-variant-numeric:tabular-nums}
+  .scorers-line{font-size:.75rem;color:var(--muted);margin-bottom:16px;line-height:1.6}
+  .mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+  @media (max-width:480px){.mode-grid{grid-template-columns:1fr}}
+  .mode-btn{
+    text-align:left;background:#101a2f;border:1px solid #2a3c60;border-radius:13px;
+    padding:14px;color:var(--ink);transition:border-color .15s, transform .12s, background .15s;
+  }
+  .mode-btn:hover{border-color:#5f8ade;background:#152241;transform:translateY(-2px)}
+  .mode-btn .mb-title{font-weight:800;font-size:.98rem;display:flex;gap:8px;align-items:center;margin-bottom:4px}
+  .mode-btn .mb-desc{font-size:.75rem;color:var(--muted);line-height:1.45}
+  .mode-btn .best{display:inline-block;margin-top:7px;font-size:.68rem;color:var(--gold);background:#3d300b;
+    padding:2px 8px;border-radius:99px}
+  .team-pick{display:flex;gap:8px;justify-content:center;margin-top:16px;flex-wrap:wrap}
+  .seg{display:inline-flex;background:#0a1220;border:1px solid #2a3a58;border-radius:99px;overflow:hidden}
+  .seg button{background:transparent;border:none;color:var(--muted);padding:8px 15px;font-weight:700;font-size:.8rem}
+  .seg button.on{background:#2d5090;color:#fff}
+
+  .result-stats{display:flex;justify-content:center;gap:22px;margin:16px 0}
+  .result-stats .stat .v{font-size:1.5rem;font-weight:900}
+  .result-stats .stat .k{font-size:.62rem;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase}
+  .emoji-grid{font-size:1.02rem;letter-spacing:2px;line-height:1.5;margin:8px 0 14px;user-select:all}
+  .new-best{color:var(--gold);font-weight:800;font-size:.9rem;margin-bottom:8px;animation:pulse 1.2s infinite}
+
+  /* ---------- moments (scorers quiz) ---------- */
+  .timeline{list-style:none;text-align:left;margin:6px 0 4px;display:flex;flex-direction:column;gap:9px}
+  .moment{
+    display:flex;align-items:center;gap:12px;background:#101a2f;border:1px solid #263858;
+    border-radius:12px;padding:11px 14px;transition:border-color .2s, background .2s;
+  }
+  .moment.done{border-color:#2ee06f77;background:#0f2a1c}
+  .moment .m-min{font-weight:900;font-variant-numeric:tabular-nums;color:var(--gold);min-width:52px;font-size:.95rem}
+  .moment .m-ico{font-size:1.1rem}
+  .moment .m-desc{flex:1;font-size:.82rem;color:var(--muted)}
+  .moment .m-ans{font-weight:800;font-size:.92rem;color:#9fe3b8;min-width:110px;text-align:right}
+  .moment .m-ans.hidden-ans{color:#4a5c78;letter-spacing:3px}
+
+  footer{max-width:1080px;margin:0 auto;padding:0 18px 40px;text-align:center;color:#5c6c84;font-size:.7rem;line-height:1.7}
+  footer a{color:#7d97c4}
+
+  #confetti{position:fixed;inset:0;pointer-events:none;z-index:60}
+  .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style>
+</head>
+<body>
+
+<!-- broadcast score bug -->
+<div class="comp-line">FIFA World Cup 2026 · <b>Semi-final</b> · Mercedes-Benz Stadium, Atlanta · 15 July 2026</div>
+<div class="scorebug-wrap">
+  <div class="scorebug" aria-label="England 1, Argentina 2, full time">
+    <div class="sb-team eng"><span class="sb-flag">🏴󠁧󠁢󠁥󠁮󠁧󠁿</span> ENG</div>
+    <div class="sb-score"><span>1</span><span style="color:#5a6a84">–</span><span>2</span></div>
+    <div class="sb-team arg"><span class="sb-flag">🇦🇷</span> ARG</div>
+    <div class="sb-min">FT</div>
+  </div>
+</div>
+
+<div class="stage">
+  <!-- pitch -->
+  <div class="pitch-wrap">
+    <div class="pitch" id="pitch">
+      <svg class="lines" viewBox="0 0 66 100" preserveAspectRatio="none" aria-hidden="true">
+        <rect x="2" y="2" width="62" height="96" rx="1"/>
+        <line x1="2" y1="50" x2="64" y2="50"/>
+        <circle cx="33" cy="50" r="7.5"/>
+        <circle cx="33" cy="50" r="0.7" fill="rgba(255,255,255,.55)"/>
+        <rect x="15" y="2" width="36" height="13"/>
+        <rect x="24.5" y="2" width="17" height="4.8"/>
+        <rect x="15" y="85" width="36" height="13"/>
+        <rect x="24.5" y="93.2" width="17" height="4.8"/>
+        <path d="M 26 15 A 8 8 0 0 0 40 15"/>
+        <path d="M 26 85 A 8 8 0 0 1 40 85"/>
+      </svg>
+      <div class="half-label top">Argentina</div>
+      <div class="half-label bottom">England</div>
+      <!-- player spots injected here -->
+    </div>
+  </div>
+
+  <!-- side panel -->
+  <div class="panel">
+    <div class="card">
+      <div class="hud">
+        <span id="modeTag">Classic</span>
+        <div class="stat"><span class="v" id="timerV">0:00</span><span class="k">Time</span></div>
+        <div class="stat"><span class="v" id="foundV">0/22</span><span class="k">Found</span></div>
+        <div class="stat" id="livesStat" style="display:none"><span class="v lives" id="livesV"></span><span class="k">Lives</span></div>
+        <div class="stat"><span class="v" id="wrongV">0</span><span class="k">Wrong</span></div>
+      </div>
+      <div class="progress-track"><div class="progress-fill" id="progFill"></div></div>
+      <div class="team-progress">
+        <span>🏴󠁧󠁢󠁥󠁮󠁧󠁿 England <b id="engProg">0/11</b></span>
+        <span>🇦🇷 Argentina <b id="argProg">0/11</b></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="guess-row">
+        <input id="guessInput" type="text" autocomplete="off" autocapitalize="off" spellcheck="false"
+               placeholder="Type a player's name…" aria-label="Guess a player">
+        <button class="btn" id="guessBtn">Guess</button>
+      </div>
+      <div class="toast" id="toast">Guess any player from either starting XI — surnames work.</div>
+      <div class="actions">
+        <button class="btn ghost small" id="hintBtn">💡 Hint (<span id="hintCount">3</span>)</button>
+        <button class="btn ghost small" id="muteBtn">🔊 Sound</button>
+        <button class="btn danger small" id="giveUpBtn">🏳️ Give up</button>
+        <button class="btn ghost small" id="menuBtn">☰ Menu</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 class="card-title">Found players</h3>
+      <div class="found-feed" id="foundFeed"><span style="color:#3d4d66;font-size:.78rem">No one yet — the teamsheets are blank…</span></div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  Missing Eleven · a lineup-guessing game. Lineups &amp; events per post-match reports of the 2026 FIFA World Cup semi-final.<br>
+  Runs fully offline — no trackers, no network calls.
+</footer>
+
+<!-- ======================= start / menu overlay ======================= -->
+<div class="overlay" id="menuOverlay">
+  <div class="modal">
+    <div class="comp-line" style="margin-top:0">FIFA World Cup 2026 · Semi-final</div>
+    <div class="big-score">
+      <span>🏴󠁧󠁢󠁥󠁮󠁧󠁿 ENG</span><span class="num">1 – 2</span><span>ARG 🇦🇷</span>
+    </div>
+    <div class="scorers-line">
+      ⚽ Gordon 55′ &nbsp;|&nbsp; ⚽ E. Fernández 85′ · L. Martínez 90+2′<br>
+      Mercedes-Benz Stadium, Atlanta · 15 July 2026
+    </div>
+    <h1>Missing Eleven</h1>
+    <p class="sub">Both starting XIs are hidden on the pitch. Name every player, position by position.</p>
+
+    <div class="team-pick">
+      <div class="seg" id="teamSeg" role="group" aria-label="Teams to guess">
+        <button data-team="both" class="on">Both XIs</button>
+        <button data-team="eng">🏴󠁧󠁢󠁥󠁮󠁧󠁿 England only</button>
+        <button data-team="arg">🇦🇷 Argentina only</button>
+      </div>
+    </div>
+
+    <div class="mode-grid">
+      <button class="mode-btn" data-mode="classic">
+        <div class="mb-title">⚽ Classic</div>
+        <div class="mb-desc">No pressure. Count-up clock, 3 hints. Find them all.</div>
+        <span class="best" id="best-classic"></span>
+      </button>
+      <button class="mode-btn" data-mode="blitz">
+        <div class="mb-title">⚡ Blitz</div>
+        <div class="mb-desc">3 minutes on the clock. No hints. How many can you name?</div>
+        <span class="best" id="best-blitz"></span>
+      </button>
+      <button class="mode-btn" data-mode="sudden">
+        <div class="mb-title">💀 Sudden Death</div>
+        <div class="mb-desc">Three wrong guesses and the ref blows full time.</div>
+        <span class="best" id="best-sudden"></span>
+      </button>
+      <button class="mode-btn" data-mode="moments">
+        <div class="mb-title">🎬 Key Moments</div>
+        <div class="mb-desc">Scorers, the assist, the managers — relive how it happened.</div>
+        <span class="best" id="best-moments"></span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ======================= moments quiz overlay ======================= -->
+<div class="overlay hidden" id="momentsOverlay">
+  <div class="modal">
+    <h1>🎬 Key Moments</h1>
+    <p class="sub">Who wrote the story of the semi-final? Type a name for each blank.</p>
+    <ul class="timeline" id="timeline"></ul>
+    <div class="guess-row" style="margin-top:14px">
+      <input id="momentInput" type="text" autocomplete="off" spellcheck="false" placeholder="Type a name…" aria-label="Guess a key moment">
+      <button class="btn" id="momentBtn">Guess</button>
+    </div>
+    <div class="toast" id="momentToast">Scorers, one assist, two managers — six names in all.</div>
+    <div class="actions" style="justify-content:center">
+      <button class="btn danger small" id="momentGiveUp">🏳️ Reveal all</button>
+      <button class="btn ghost small" id="momentBack">← Back to menu</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======================= full-time overlay ======================= -->
+<div class="overlay hidden" id="endOverlay">
+  <div class="modal">
+    <h1 id="endTitle">Full Time!</h1>
+    <p class="sub" id="endSub"></p>
+    <div class="new-best" id="newBest" style="display:none">🏆 New personal best!</div>
+    <div class="result-stats">
+      <div class="stat"><div class="v" id="endFound">0/22</div><div class="k">Found</div></div>
+      <div class="stat"><div class="v" id="endTime">0:00</div><div class="k">Time</div></div>
+      <div class="stat"><div class="v" id="endAcc">0%</div><div class="k">Accuracy</div></div>
+    </div>
+    <div class="emoji-grid" id="emojiGrid"></div>
+    <div class="actions" style="justify-content:center">
+      <button class="btn gold" id="shareBtn">📋 Copy result</button>
+      <button class="btn" id="replayBtn">↻ Play again</button>
+      <button class="btn ghost" id="endMenuBtn">☰ Menu</button>
+    </div>
+  </div>
+</div>
+
+<canvas id="confetti"></canvas>
+<div class="sr-only" aria-live="polite" id="srLive"></div>
+
+<script>
+"use strict";
+
+/* =====================================================================
+   MATCH DATA — England 1–2 Argentina, WC 2026 semi-final (15 Jul 2026)
+   ===================================================================== */
+const MATCH = {
+  eng: {
+    id:"eng", name:"England", flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", formation:"4-2-3-1", manager:"Thomas Tuchel",
+    jersey:{body:"#f4f6fb", trim:"#1b2f5e", sleeve:"#e8ecf5"},
+    rows:[
+      [ p("Jordan Pickford","GK",["pickford"]) ],
+      [ p("Reece James","RB",["james","reece"]), p("John Stones","CB",["stones"]),
+        p("Marc Guéhi","CB",["guehi"]), p("Djed Spence","LB",["spence","djed"]) ],
+      [ p("Declan Rice","DM",["rice","declan"]), p("Elliot Anderson","CM",["anderson","elliot"]) ],
+      [ p("Morgan Rogers","RAM",["rogers"]), p("Jude Bellingham","AM",["bellingham","jude"]),
+        p("Anthony Gordon","LAM",["gordon"],{goals:["55′"]}) ],
+      [ p("Harry Kane","ST",["kane","harry kane"],{captain:true}) ],
+    ],
+  },
+  arg: {
+    id:"arg", name:"Argentina", flag:"🇦🇷", formation:"4-4-2", manager:"Lionel Scaloni",
+    jersey:{body:"#8fc1e8", trim:"#0a2a52", sleeve:"#f2f7fc", stripes:true},
+    rows:[
+      [ p("Emiliano Martínez","GK",["dibu","emi","emiliano","emi martinez","emiliano martinez","dibu martinez"]) ],
+      [ p("Nahuel Molina","RB",["molina","nahuel"]), p("Cristian Romero","CB",["romero","cuti"]),
+        p("Lisandro Martínez","CB",["lisandro","licha","lisandro martinez","licha martinez"]),
+        p("Nicolás Tagliafico","LB",["tagliafico","taglia"]) ],
+      [ p("Giuliano Simeone","RM",["simeone","giuliano"]), p("Alexis Mac Allister","CM",["mac allister","macallister","alexis","mcallister","mcalister","mac alister"]),
+        p("Leandro Paredes","CM",["paredes","leandro"]), p("Enzo Fernández","LM",["enzo","fernandez","enzo fernandez"],{goals:["85′"]}) ],
+      [ p("Lionel Messi","FW",["messi","leo","lionel","la pulga"],{captain:true,assists:["90+2′"]}),
+        p("Julián Álvarez","FW",["alvarez","julian","julian alvarez","arana","la arana","spider"]) ],
+    ],
+  },
+};
+
+const MOMENTS = [
+  {min:"55′",  ico:"⚽", desc:"England lead — low finish from the left",     answer:"Anthony Gordon",   aliases:["gordon","anthony gordon"]},
+  {min:"85′",  ico:"⚽", desc:"Argentina level — bent in from distance",      answer:"Enzo Fernández",   aliases:["enzo","fernandez","enzo fernandez"]},
+  {min:"90+2′",ico:"⚽", desc:"The winner — header at the death (sub)",       answer:"Lautaro Martínez", aliases:["lautaro","lautaro martinez","el toro"]},
+  {min:"90+2′",ico:"🅰️", desc:"Cross for the winner — vintage delivery",      answer:"Lionel Messi",     aliases:["messi","leo","lionel","lionel messi"]},
+  {min:"—",   ico:"📋", desc:"England head coach",                            answer:"Thomas Tuchel",    aliases:["tuchel","thomas tuchel"]},
+  {min:"—",   ico:"📋", desc:"Argentina head coach",                          answer:"Lionel Scaloni",   aliases:["scaloni","lionel scaloni"]},
+];
+
+function p(name,pos,aliases,extra){ return Object.assign({name,pos,aliases:aliases||[]},extra||{}); }
+
+/* =====================================================================
+   Helpers
+   ===================================================================== */
+const $ = s=>document.querySelector(s);
+const norm = s=>s.normalize("NFD").replace(/[̀-ͯ]/g,"")
+  .toLowerCase().replace(/[-'’.]/g," ").replace(/\s+/g," ").trim();
+const fmt = secs=>`${Math.floor(secs/60)}:${String(secs%60).padStart(2,"0")}`;
+
+/* ---- tiny WebAudio sounds (no assets) ---- */
+let audioCtx=null, muted=false;
+function tone(freq,dur,type="sine",gain=0.12,when=0){
+  if(muted) return;
+  audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)();
+  const t = audioCtx.currentTime+when;
+  const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+  o.type=type; o.frequency.value=freq;
+  g.gain.setValueAtTime(gain,t); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(g).connect(audioCtx.destination); o.start(t); o.stop(t+dur);
+}
+const sfx = {
+  good(){ tone(660,.12,"triangle",.14); tone(990,.18,"triangle",.12,.09); },
+  bad(){ tone(180,.22,"sawtooth",.09); },
+  hint(){ tone(520,.1,"sine",.1); tone(520,.1,"sine",.1,.14); },
+  whistle(){ [0,.18,.36].forEach((w,i)=>tone(2200-(i*60),.14,"square",.05,w)); },
+  win(){ [523,659,784,1047].forEach((f,i)=>tone(f,.25,"triangle",.13,i*.13)); },
+};
+
+/* =====================================================================
+   Game state
+   ===================================================================== */
+const state = {
+  mode:"classic", teams:"both",
+  players:[],           // flat list of active players
+  found:0, wrong:0, hints:3, lives:3,
+  seconds:0, timerId:null, running:false,
+  order:[],             // reveal order for emoji grid
+};
+const BLITZ_SECS = 180;
+const bestKey = ()=>`me-best-${state.mode}-${state.teams}`;
+
+/* ---------- build pitch ---------- */
+function layoutTeam(team, half){ // half: "top" (arg) | "bottom" (eng)
+  const rows = team.rows;
+  const out=[];
+  rows.forEach((row,ri)=>{
+    // distance from own goal line (in pitch %): GK pinned deep, outfield rows
+    // spread evenly between the box edge and the halfway line
+    const d = ri===0 ? 7.5 : 17 + ((ri-1)/(rows.length-2))*30;
+    const y = half==="bottom" ? 100-d : d;
+    row.forEach((pl,ci)=>{
+      const x = row.length===1 ? 50 : 13 + (ci/(row.length-1))*74;
+      out.push({...pl, team:team.id, x, y});
+    });
+  });
+  return out;
+}
+
+function jerseySVG(team, hidden){
+  const j = MATCH[team].jersey;
+  const body = hidden ? "#22314e" : j.body;
+  const trim = hidden ? "#141d31" : j.trim;
+  const sleeve = hidden ? "#1b2740" : (j.sleeve||j.body);
+  const stripes = (!hidden && j.stripes)
+    ? `<g clip-path="url(#bodyclip-${team})">
+         <rect x="34" y="10" width="7" height="76" fill="#f2f7fc"/>
+         <rect x="46" y="10" width="7" height="76" fill="#f2f7fc"/>
+         <rect x="58" y="10" width="7" height="76" fill="#f2f7fc"/>
+       </g>` : "";
+  return `<svg viewBox="0 0 100 92" aria-hidden="true">
+    <defs><clipPath id="bodyclip-${team}"><path d="M31 10 C37 17 43 19 50 19 C57 19 63 17 69 10 L74 12 L78 34 L78 86 L22 86 L22 34 L26 12 Z"/></clipPath></defs>
+    <path d="M31 10 L14 17 L5 38 L20 45 L24 34 L22 86 L78 86 L76 34 L80 45 L95 38 L86 17 L69 10 C63 17 57 19 50 19 C43 19 37 17 31 10 Z"
+          fill="${body}" stroke="${trim}" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M14 17 L5 38 L20 45 L24 34 Z" fill="${sleeve}" stroke="${trim}" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M86 17 L95 38 L80 45 L76 34 Z" fill="${sleeve}" stroke="${trim}" stroke-width="2.5" stroke-linejoin="round"/>
+    ${stripes}
+    <path d="M31 10 C37 17 43 19 50 19 C57 19 63 17 69 10" fill="none" stroke="${trim}" stroke-width="3"/>
+  </svg>`;
+}
+
+function buildPitch(){
+  const pitch = $("#pitch");
+  pitch.querySelectorAll(".spot").forEach(n=>n.remove());
+  state.players=[];
+  const active=[];
+  if(state.teams!=="arg") active.push(...layoutTeam(MATCH.eng,"bottom"));
+  if(state.teams!=="eng") active.push(...layoutTeam(MATCH.arg,"top"));
+  active.forEach((pl,idx)=>{
+    pl.idx=idx; pl.revealed=false; pl.foundByGuess=false; pl.hintShown=false;
+    const el=document.createElement("div");
+    el.className="spot"; el.dataset.idx=idx;
+    el.style.left=pl.x+"%"; el.style.top=pl.y+"%";
+    el.style.fontSize="clamp(9px, 2.4vmin, 15px)";
+    el.innerHTML=`
+      <div class="jersey">${jerseySVG(pl.team,true)}
+        <div class="qmark">?</div>
+        <div class="hint-letter" style="display:none"></div>
+        <div class="pos-tag">${pl.pos}</div>
+      </div>
+      <div class="name-plate"></div>`;
+    pitch.appendChild(el);
+    pl.el=el;
+    state.players.push(pl);
+  });
+}
+
+function revealPlayer(pl, byGuess){
+  pl.revealed=true; pl.foundByGuess=byGuess;
+  const el=pl.el;
+  el.classList.add("revealed", byGuess?"found":"given");
+  if(byGuess) el.classList.add("pop");
+  const jer=el.querySelector(".jersey");
+  const surname = pl.name.split(" ").slice(1).join(" ")||pl.name;
+  const badges = (pl.goals||[]).map(g=>`<span title="Goal ${g}">⚽</span>`).join("")
+               + (pl.assists||[]).map(a=>`<span title="Assist ${a}">🅰️</span>`).join("");
+  jer.innerHTML = jerseySVG(pl.team,false)
+    + `<div class="pos-tag" style="color:${MATCH[pl.team].jersey.trim};font-weight:900">${pl.pos}</div>`
+    + (badges?`<div class="badge-row">${badges}</div>`:"")
+    + (pl.captain?`<div class="cap">C</div>`:"");
+  el.querySelector(".name-plate").textContent = surname;
+  el.title = pl.name + (pl.captain?" (captain)":"");
+  $("#srLive").textContent = (byGuess?"Correct: ":"Revealed: ")+pl.name;
+}
+
+/* ---------- guessing ---------- */
+function matchGuess(guess){
+  const g=norm(guess);
+  if(g.length<3) return {status:"short"};
+  const candidates=[];
+  for(const pl of state.players){
+    const full=norm(pl.name);
+    const surname=full.split(" ").slice(1).join(" ");
+    const keys=[full,surname,...pl.aliases.map(norm)];
+    if(keys.includes(g)) candidates.push(pl);
+  }
+  const hidden=candidates.filter(c=>!c.revealed);
+  if(hidden.length===1) return {status:"hit", player:hidden[0]};
+  if(hidden.length>1)  return {status:"ambiguous", players:hidden};
+  if(candidates.length) return {status:"dupe", player:candidates[0]};
+  return {status:"miss"};
+}
+
+function toast(msg,cls){
+  const t=$("#toast"); t.textContent=msg; t.className="toast "+(cls||"");
+}
+
+function submitGuess(){
+  if(!state.running) return;
+  const input=$("#guessInput");
+  const val=input.value.trim();
+  if(!val) return;
+  const res=matchGuess(val);
+  if(res.status==="hit"){
+    revealPlayer(res.player,true);
+    state.found++; state.order.push(res.player);
+    addChip(res.player);
+    sfx.good();
+    toast(`✅ ${res.player.name} — ${MATCH[res.player.team].flag} ${res.player.pos}`,"ok");
+    input.value="";
+    updateHUD();
+    if(state.found===state.players.length) endGame(true);
+  } else if(res.status==="ambiguous"){
+    const positions = res.players.map(x=>`${MATCH[x.team].flag} ${x.pos}`).join(" & ");
+    toast(`🤔 More than one match (${positions}) — be more specific!`,"info");
+    sfx.hint();
+  } else if(res.status==="dupe"){
+    toast(`Already on the teamsheet: ${res.player.name}`,"info");
+    input.value="";
+  } else if(res.status==="short"){
+    toast("Type at least 3 letters.","info");
+  } else {
+    state.wrong++;
+    updateHUD();
+    sfx.bad();
+    input.classList.remove("shake"); void input.offsetWidth; input.classList.add("shake");
+    if(state.mode==="sudden"){
+      state.lives--;
+      updateHUD();
+      if(state.lives<=0){ toast("💀 Third strike — full time!","err"); endGame(false); return; }
+      toast(`❌ Not in this game… ${state.lives} ${state.lives===1?"life":"lives"} left!`,"err");
+    } else {
+      toast("❌ Not on either teamsheet (or already found). Try again!","err");
+    }
+    input.select();
+  }
+}
+
+function addChip(pl){
+  const feed=$("#foundFeed");
+  if(feed.querySelector("span[style]")) feed.innerHTML="";
+  const c=document.createElement("span");
+  c.className="chip"+(pl.team==="arg"?" arg-chip":"");
+  c.textContent=`${MATCH[pl.team].flag} ${pl.name.split(" ").slice(1).join(" ")||pl.name}`;
+  feed.prepend(c);
+}
+
+/* ---------- hints ---------- */
+function useHint(){
+  if(!state.running||state.hints<=0) return;
+  const pool=state.players.filter(x=>!x.revealed&&!x.hintShown);
+  if(!pool.length){ toast("No hidden players left to hint!","info"); return; }
+  const pl=pool[Math.floor(Math.random()*pool.length)];
+  pl.hintShown=true;
+  state.hints--;
+  $("#hintCount").textContent=state.hints;
+  if(state.hints===0) $("#hintBtn").disabled=true;
+  const el=pl.el;
+  el.classList.add("hinted");
+  el.querySelector(".qmark").style.display="none";
+  const hl=el.querySelector(".hint-letter");
+  const surname=pl.name.split(" ").slice(1).join(" ")||pl.name;
+  hl.textContent=surname[0]+"…";
+  hl.style.display="block";
+  sfx.hint();
+  toast(`💡 The ${MATCH[pl.team].flag} ${pl.pos}'s surname starts with “${surname[0]}”.`,"info");
+}
+
+/* ---------- HUD / timer ---------- */
+function updateHUD(){
+  $("#foundV").textContent=`${state.found}/${state.players.length}`;
+  $("#wrongV").textContent=state.wrong;
+  $("#progFill").style.width=(state.found/state.players.length*100)+"%";
+  const engT=state.players.filter(x=>x.team==="eng"), argT=state.players.filter(x=>x.team==="arg");
+  $("#engProg").textContent = engT.length?`${engT.filter(x=>x.revealed&&x.foundByGuess).length}/${engT.length}`:"—";
+  $("#argProg").textContent = argT.length?`${argT.filter(x=>x.revealed&&x.foundByGuess).length}/${argT.length}`:"—";
+  if(state.mode==="sudden"){
+    $("#livesStat").style.display="";
+    $("#livesV").textContent="❤️".repeat(state.lives)+"🖤".repeat(3-state.lives);
+  } else $("#livesStat").style.display="none";
+  const tv=$("#timerV");
+  const shown = state.mode==="blitz" ? Math.max(0,BLITZ_SECS-state.seconds) : state.seconds;
+  tv.textContent=fmt(shown);
+  tv.classList.toggle("time-low", state.mode==="blitz" && shown<=30 && state.running);
+}
+
+function startTimer(){
+  clearInterval(state.timerId);
+  state.timerId=setInterval(()=>{
+    if(!state.running) return;
+    state.seconds++;
+    updateHUD();
+    if(state.mode==="blitz"&&state.seconds>=BLITZ_SECS){
+      toast("⏱️ Full time — the clock beat you!","err");
+      endGame(false);
+    }
+  },1000);
+}
+
+/* ---------- game flow ---------- */
+const MODE_LABEL={classic:"⚽ Classic",blitz:"⚡ Blitz 3:00",sudden:"💀 Sudden Death",moments:"🎬 Key Moments"};
+
+function startGame(mode){
+  state.mode=mode;
+  if(mode==="moments"){ openMoments(); return; }
+  state.found=0; state.wrong=0; state.seconds=0; state.order=[];
+  state.hints = mode==="classic" ? 3 : 0;
+  state.lives=3;
+  buildPitch();
+  $("#hintCount").textContent=state.hints;
+  $("#hintBtn").disabled = state.hints===0;
+  $("#hintBtn").style.display = mode==="classic" ? "" : "none";
+  $("#modeTag").textContent=MODE_LABEL[mode]+(state.teams!=="both"?` · ${state.teams.toUpperCase()} only`:"");
+  $("#foundFeed").innerHTML=`<span style="color:#3d4d66;font-size:.78rem">No one yet — the teamsheets are blank…</span>`;
+  toast(mode==="blitz" ? "⚡ 3 minutes. Go go go!" :
+        mode==="sudden" ? "💀 Careful — three wrong guesses ends it." :
+        "Guess any player from either starting XI — surnames work.","");
+  $("#menuOverlay").classList.add("hidden");
+  $("#endOverlay").classList.add("hidden");
+  state.running=true;
+  startTimer();
+  updateHUD();
+  sfx.whistle();
+  setTimeout(()=>$("#guessInput").focus(),50);
+}
+
+function endGame(won){
+  state.running=false;
+  clearInterval(state.timerId);
+  // reveal the rest
+  state.players.filter(x=>!x.revealed).forEach(x=>revealPlayer(x,false));
+  const total=state.players.length;
+  const guesses=state.found+state.wrong;
+  const acc=guesses?Math.round(state.found/guesses*100):0;
+  const perfect = state.found===total;
+  $("#endTitle").textContent = perfect ? "🏆 Full house!" : won ? "Full Time!" : "😖 Full Time…";
+  $("#endSub").textContent = perfect
+    ? `Every single player named — ${MODE_LABEL[state.mode]}.`
+    : `You named ${state.found} of ${total} before the whistle.`;
+  $("#endFound").textContent=`${state.found}/${total}`;
+  $("#endTime").textContent=fmt(state.seconds);
+  $("#endAcc").textContent=acc+"%";
+  $("#emojiGrid").innerHTML=emojiGrid();
+  // personal bests
+  let newBest=false;
+  const key=bestKey();
+  const prev=JSON.parse(localStorage.getItem(key)||"null");
+  const score={found:state.found,secs:state.seconds};
+  if(!prev || score.found>prev.found || (score.found===prev.found && perfect && score.secs<prev.secs)){
+    localStorage.setItem(key,JSON.stringify(score)); newBest=!!prev || perfect;
+  }
+  $("#newBest").style.display=newBest?"":"none";
+  if(perfect){ sfx.win(); confettiBurst(); } else { sfx.whistle(); }
+  setTimeout(()=>$("#endOverlay").classList.remove("hidden"), perfect?900:600);
+}
+
+function emojiGrid(){
+  const lines=[];
+  const teams = state.teams==="both" ? ["eng","arg"] : [state.teams];
+  for(const t of teams){
+    const ps=state.players.filter(x=>x.team===t);
+    lines.push((t==="eng"?"🏴󠁧󠁢󠁥󠁮󠁧󠁿 ":"🇦🇷 ")+ps.map(x=>x.foundByGuess?"🟩":"🟥").join(""));
+  }
+  return lines.join("<br>");
+}
+
+function shareText(){
+  const total=state.players.length;
+  return [
+    `Missing Eleven — ENG 1-2 ARG · WC26 semi`,
+    `${MODE_LABEL[state.mode]}${state.teams!=="both"?" · "+state.teams.toUpperCase()+" only":""}: ${state.found}/${total} in ${fmt(state.seconds)} (${state.wrong} wrong)`,
+    $("#emojiGrid").innerHTML.replace(/<br>/g,"\n"),
+  ].join("\n");
+}
+
+/* ---------- key moments quiz ---------- */
+let momentsState=null;
+function openMoments(){
+  momentsState=MOMENTS.map(m=>({...m,done:false}));
+  renderTimeline();
+  $("#momentToast").textContent="Scorers, one assist, two managers — six names in all.";
+  $("#momentToast").className="toast";
+  $("#menuOverlay").classList.add("hidden");
+  $("#momentsOverlay").classList.remove("hidden");
+  sfx.whistle();
+  setTimeout(()=>$("#momentInput").focus(),50);
+}
+function renderTimeline(){
+  $("#timeline").innerHTML=momentsState.map(m=>`
+    <li class="moment ${m.done?"done":""}">
+      <span class="m-min">${m.min}</span><span class="m-ico">${m.ico}</span>
+      <span class="m-desc">${m.desc}</span>
+      <span class="m-ans ${m.done?"":"hidden-ans"}">${m.done?m.answer:"— ? —"}</span>
+    </li>`).join("");
+}
+function momentGuess(){
+  const input=$("#momentInput");
+  const g=norm(input.value); if(g.length<3) return;
+  const t=$("#momentToast");
+  let hit=false;
+  for(const m of momentsState){
+    if(m.done) continue;
+    const keys=[norm(m.answer),...m.aliases.map(norm)];
+    if(keys.includes(g)){ m.done=true; hit=true; }
+  }
+  if(hit){
+    sfx.good(); renderTimeline(); input.value="";
+    const left=momentsState.filter(m=>!m.done).length;
+    if(left===0){ t.textContent="🏆 All six! You watched this one closely."; t.className="toast ok"; sfx.win(); confettiBurst(); }
+    else { t.textContent=`✅ Got it — ${left} to go.`; t.className="toast ok"; }
+  } else {
+    sfx.bad();
+    t.textContent="❌ Not one of the six names — think scorers, the assist, the dugouts."; t.className="toast err";
+    input.select();
+  }
+}
+
+/* ---------- confetti ---------- */
+function confettiBurst(){
+  const cv=$("#confetti"),ctx=cv.getContext("2d");
+  cv.width=innerWidth; cv.height=innerHeight;
+  const colors=["#75aadb","#ffffff","#ffd75e","#e63946","#2ee06f"];
+  const parts=Array.from({length:180},()=>({
+    x:Math.random()*cv.width, y:-20-Math.random()*cv.height*.5,
+    w:6+Math.random()*6, h:8+Math.random()*8,
+    vy:2+Math.random()*3.5, vx:-1.5+Math.random()*3,
+    rot:Math.random()*Math.PI, vr:-.12+Math.random()*.24,
+    c:colors[Math.floor(Math.random()*colors.length)],
+  }));
+  let frames=0;
+  (function tick(){
+    ctx.clearRect(0,0,cv.width,cv.height);
+    parts.forEach(pt=>{
+      pt.x+=pt.vx; pt.y+=pt.vy; pt.rot+=pt.vr;
+      ctx.save(); ctx.translate(pt.x,pt.y); ctx.rotate(pt.rot);
+      ctx.fillStyle=pt.c; ctx.fillRect(-pt.w/2,-pt.h/2,pt.w,pt.h); ctx.restore();
+    });
+    if(++frames<260) requestAnimationFrame(tick);
+    else ctx.clearRect(0,0,cv.width,cv.height);
+  })();
+}
+
+/* ---------- personal bests on menu ---------- */
+function paintBests(){
+  for(const m of ["classic","blitz","sudden"]){
+    const el=$("#best-"+m);
+    const b=JSON.parse(localStorage.getItem(`me-best-${m}-${state.teams}`)||"null");
+    if(b){ el.style.display=""; el.textContent=`Best: ${b.found} found · ${fmt(b.secs)}`; }
+    else el.style.display="none";
+  }
+  $("#best-moments").style.display="none";
+}
+
+/* ---------- wire up ---------- */
+$("#guessBtn").addEventListener("click",submitGuess);
+$("#guessInput").addEventListener("keydown",e=>{ if(e.key==="Enter") submitGuess(); });
+$("#hintBtn").addEventListener("click",useHint);
+$("#giveUpBtn").addEventListener("click",()=>{ if(state.running) endGame(false); });
+$("#menuBtn").addEventListener("click",()=>{
+  state.running=false; clearInterval(state.timerId);
+  paintBests();
+  $("#menuOverlay").classList.remove("hidden");
+});
+$("#muteBtn").addEventListener("click",e=>{
+  muted=!muted; e.currentTarget.textContent=muted?"🔇 Muted":"🔊 Sound";
+});
+document.querySelectorAll(".mode-btn").forEach(b=>
+  b.addEventListener("click",()=>startGame(b.dataset.mode)));
+document.querySelectorAll("#teamSeg button").forEach(b=>
+  b.addEventListener("click",()=>{
+    document.querySelectorAll("#teamSeg button").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on");
+    state.teams=b.dataset.team;
+    paintBests();
+  }));
+$("#replayBtn").addEventListener("click",()=>startGame(state.mode));
+$("#endMenuBtn").addEventListener("click",()=>{
+  $("#endOverlay").classList.add("hidden");
+  paintBests();
+  $("#menuOverlay").classList.remove("hidden");
+});
+$("#shareBtn").addEventListener("click",async e=>{
+  try{ await navigator.clipboard.writeText(shareText()); e.currentTarget.textContent="✅ Copied!"; }
+  catch{ e.currentTarget.textContent="⚠️ Copy failed"; }
+  setTimeout(()=>e.currentTarget&&(e.currentTarget.textContent="📋 Copy result"),1500);
+});
+$("#momentBtn").addEventListener("click",momentGuess);
+$("#momentInput").addEventListener("keydown",e=>{ if(e.key==="Enter") momentGuess(); });
+$("#momentGiveUp").addEventListener("click",()=>{
+  momentsState.forEach(m=>m.done=true); renderTimeline();
+  $("#momentToast").textContent="Revealed — that's how the night unfolded.";
+  $("#momentToast").className="toast info";
+});
+$("#momentBack").addEventListener("click",()=>{
+  $("#momentsOverlay").classList.add("hidden");
+  paintBests();
+  $("#menuOverlay").classList.remove("hidden");
+});
+
+/* initial paint: show hidden XIs behind the menu */
+buildPitch(); updateHUD(); paintBests();
+</script>
+</body>
+</html>
